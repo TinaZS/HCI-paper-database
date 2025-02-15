@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-def parse_arxiv_data(xml_data):
+def parse_arxiv_data(xml_data,existing_titles):
     if xml_data is None:
         return []
     
@@ -10,6 +10,12 @@ def parse_arxiv_data(xml_data):
     for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
 
         title = entry.find("{http://www.w3.org/2005/Atom}title").text.strip()
+
+        # Skip duplicates
+        if title in existing_titles:
+            print(f"Skipping duplicate: {title}")
+            continue
+        
         abstract = entry.find("{http://www.w3.org/2005/Atom}summary").text.strip()
         link = entry.find("{http://www.w3.org/2005/Atom}id").text.strip()
         published_date = entry.find("{http://www.w3.org/2005/Atom}published").text.strip()
