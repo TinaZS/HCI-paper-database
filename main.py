@@ -1,34 +1,45 @@
 from src.fetch import fetch_arxiv_data
 from src.parse import parse_arxiv_data
-from src.generate_embeddings import generate_embeddings
+from src.generate_and_store_embeddings import generate_and_store_embeddings
 from src.load_index import load_index
 from src.search import search
-from src.add_papers import add_papers_from_arxiv
-from src.save_metadata import save_metadata
-import json
+from src.rebuild_faiss import needs_rebuild, rebuild_faiss 
+from src.config import FAISS_INDEX_FILENAME
+
+
 
 def main():
+
+    if needs_rebuild():
+        print("Rebuilding FAISS before proceeding...")
+        rebuild_faiss()
+    else:
+        print("No need to rebuild FAISS from supabase")
+    
+
+    #Fetch papers from arXiv
     xml_data = fetch_arxiv_data()
     if not xml_data:
         print("Failed to fetch data.")
         return
     
-    papers = add_papers_from_arxiv(xml_data)
-    papers_with_embeddings = generate_embeddings(papers)
-    save_metadata(papers_with_embeddings)  # Save merged JSON
+    #Parse new and unique papers
+    unique_papers = parse_arxiv_data(xml_data)
+
+    #Generate embeddings and store new papers in Supabase
+    generate_and_store_embeddings(unique_papers)
+
+    #Load FAISS index and run search
+    index = load_index(FAISS_INDEX_FILENAME)
     
-    index=load_index("faiss_index.index")
     if index:
-        query="Fair data"
-        results=search(query,index)
+        query = "CSS"  # User query
+        results = search(query, index)
 
         for result in results:
-            print(result)
-
+            print(f"Title: {result['title']}\n  {result['link']}\n")
     else:
         print("ERROR: result array is empty")
 
-
 if __name__ == "__main__":
     main()
-    

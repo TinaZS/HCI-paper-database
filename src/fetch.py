@@ -14,12 +14,6 @@ def fetch_arxiv_data(query="cs.HC", max_results=10):
         return None
 
 
-#xml_data = fetch_arxiv_data()
-
-# if xml_data:
-#     print("Successfully fetched data from arXiv!")
-# else:
-#     print("Failed to fetch data.")
 
     
     
