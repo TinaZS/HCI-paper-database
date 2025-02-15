@@ -52,6 +52,3 @@ def generate_and_store_embeddings(papers):
         faiss.write_index(index, index_filename)
 
 
-    #update faiss_id in Supabase
-    for paper in papers:
-        supabase.table("papers").update({"faiss_id": paper["faiss_id"]}).eq("title", paper["title"]).execute()
