@@ -6,21 +6,14 @@ from src.load_titles import load_titles
 
 def add_papers_from_arxiv(xml_data):
     """Parses arXiv XML, loads existing papers, and adds new ones without duplicates."""
+    
     filename = "papers_with_embeddings.json"
 
-    # Load existing papers
-    papers_dict = load_titles()
-
-     # Extract existing titles into a dictionary for quick lookup
-    existing_titles_dict = papers_dict  # No need to extract "papers" key
-
+    # Load existing titles
+    existing_titles_dict = load_titles()
 
     # Parse new papers from XML
     new_papers= parse_arxiv_data(xml_data,existing_titles_dict)
-
-    #print(new_titles)
-
-    #print(existing_titles)
 
     if new_papers:
 
