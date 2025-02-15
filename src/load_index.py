@@ -3,6 +3,8 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import json
 
+
+
 def load_index(index_filename):
     try:
         index = faiss.read_index(index_filename)
