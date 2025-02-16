@@ -26,12 +26,12 @@ def main():
     print(category_dict)
     time.sleep(10)
     
-    pullSize=1000
+    pullSize=100
     for key in category_dict:
         maxPulls=category_dict[key]
         counter=0
 
-        while(counter<maxPulls):
+        while(counter<600):
             
             #Fetch papers from arXiv
             xml_data = fetch_arxiv_data(key,pullSize,counter)
@@ -65,7 +65,7 @@ def main():
     else:
         print("ERROR: result array is empty")
   
-    file_size_test()
+    #file_size_test()
     
 if __name__ == "__main__":
     main()

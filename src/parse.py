@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 from supabase_client import supabase
+import time
 
 def parse_arxiv_data(xml_data):
     """
@@ -17,8 +18,28 @@ def parse_arxiv_data(xml_data):
               for entry in root.findall("{http://www.w3.org/2005/Atom}entry")]
 
     #Check against supabase for existing titles
-    response = supabase.table("papers").select("title").in_("title", titles).execute()
-    existing_titles = {row["title"] for row in response.data} if response.data else set()
+    existing_titles = set()
+    batch_size = 500  # Adjust based on Supabase limits
+
+    for i in range(0, len(titles), batch_size):
+        batch = titles[i:i + batch_size]
+
+        try:
+            response = supabase.table("papers").select("title").in_("title", batch).execute()
+
+            
+            if response.data:
+                existing_titles.update(row["title"] for row in response.data)
+
+             # Add a 1-second delay between requests
+
+        except Exception as e:
+            print(f"Batch {i} failed: {e}")
+            time.sleep(1)
+        
+        if response.data:  # If Supabase returns data, add to existing_titles set
+            existing_titles.update(row["title"] for row in response.data)
+
 
     #Parse & Skip
     for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
