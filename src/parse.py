@@ -13,7 +13,7 @@ def parse_arxiv_data(xml_data,existing_titles):
 
         # Skip duplicates
         if title in existing_titles:
-            print(f"Skipping duplicate: {title}")
+            #print(f"Skipping duplicate: {title}")
             continue
         
         abstract = entry.find("{http://www.w3.org/2005/Atom}summary").text.strip()
