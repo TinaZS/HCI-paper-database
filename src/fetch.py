@@ -1,8 +1,10 @@
 import requests
 
 
-def fetch_arxiv_data(query="cs.HC", max_results=10):
-    url = f"http://export.arxiv.org/api/query?search_query=cat:{query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
+#def fetch_arxiv_data(query="cs.HC", max_results=1000,start=21000):
+def fetch_arxiv_data(query,max_results,start):
+    url = f"http://export.arxiv.org/api/query?search_query=cat:{query}&start={start}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
+    print(url,"\n")
     
     try:
         response = requests.get(url, timeout=10)
