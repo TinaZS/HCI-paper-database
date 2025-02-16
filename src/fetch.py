@@ -16,12 +16,6 @@ def fetch_arxiv_data(query,max_results,start):
         return None
 
 
-#xml_data = fetch_arxiv_data()
-
-# if xml_data:
-#     print("Successfully fetched data from arXiv!")
-# else:
-#     print("Failed to fetch data.")
 
     
     
