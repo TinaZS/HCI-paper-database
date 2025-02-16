@@ -27,25 +27,38 @@ def generate_and_store_embeddings(papers):
     if not papers:
         print("No new papers to process")
         return
+    
 
+    seen_titles = set()
+    unique_papers = []
+    
+    for paper in papers:
+        if paper["title"] not in seen_titles:  
+            unique_papers.append(paper)
+            seen_titles.add(paper["title"])  
+
+    if not unique_papers:
+        print("No new unique papers to insert.")
+        return
+    
+    
     embeddings = []
-    start_faiss_id = index.ntotal  #We use this to track the starting FAISS ID for new papers
+    start_faiss_id = index.ntotal
 
-    for i, paper in enumerate(papers):
+    for i, paper in enumerate(unique_papers):
         embedding = embedding_model.encode(paper["abstract"]).astype("float32").tolist()
         paper["embedding"] = embedding
-        paper["embedding_status"] = True #Keeping here for debugging purposes, can delete
-        paper["faiss_id"] = start_faiss_id + i  #We calculate Faiss ID here
+        paper["embedding_status"] = True
+        paper["faiss_id"] = start_faiss_id + i
         embeddings.append(embedding)
 
-    #We store metadata and embeddings in Supabase
-    response = supabase.table("papers").insert(papers).execute()
+    response = supabase.table("new_papers").insert(unique_papers).execute()
     if response.data:
-        print(f"Stored {len(papers)} new papers in Supabase")
+        print(f"Stored {len(unique_papers)} new papers in Supabase")
     else:
         print("Error inserting papers into Supabase")
 
-    #adding new embeddings to faiss
+
     if embeddings:
         index.add(np.array(embeddings, dtype="float32"))
         print(f"Added {len(embeddings)} new embeddings to FAISS")

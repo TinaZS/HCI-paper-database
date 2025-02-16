@@ -14,7 +14,7 @@ def fetch_embeddings_from_supabase():
     """
     Fetch all embeddings and their corresponding faiss_id from Supabase.
     """
-    response = supabase.table("papers").select("faiss_id", "embedding").order("faiss_id").execute()
+    response = supabase.table("new_papers").select("faiss_id", "embedding").order("faiss_id").execute()
 
     if not response.data:
         print("No embeddings found in Supabase.")
@@ -40,11 +40,13 @@ def needs_rebuild():
     """
     Checks if the FAISS index exists and whether the number of vectors matches the number of embeddings in Supabase.
     """
-    embeddings, _ = fetch_embeddings_from_supabase()
-    if embeddings is None or len(embeddings) == 0:
-        print("No embeddings found in Supabase. Skipping FAISS rebuild.")
-        return False  # No data to rebuild, avoid unnecessary FAISS creation
+    embeddings, faiss_ids = fetch_embeddings_from_supabase()
 
+
+    if embeddings is None or len(embeddings) == 0:
+        print("No embeddings available to rebuild FAISS.")
+        return
+        
     if not os.path.exists(index_filename):
         print("FAISS index file not found. Rebuild required.")
         return True

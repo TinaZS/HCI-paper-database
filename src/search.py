@@ -25,7 +25,7 @@ def search(query, index, k=2):
      #Fetch metadata from Supabase based on `faiss_id`
     results = []
     for idx in I[0]:
-        response = supabase.table("papers").select("title", "authors", "abstract", "link").eq("faiss_id", idx).execute()
+        response = supabase.table("new_papers").select("title", "authors", "abstract", "link").eq("faiss_id", idx).execute()
         if response.data:
             results.append(response.data[0])  # Append the first match
 

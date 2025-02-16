@@ -19,19 +19,19 @@ def main():
     else:
         print("No need to rebuild FAISS from supabase")
         
-    category_dict={"cs.AI":0}
+    category_dict={"cs.HC":0}
 
     for key in category_dict:
         category_dict[key]=get_category_size(key)
     print(category_dict)
     time.sleep(10)
     
-    pullSize=100
+    pullSize=100 #this ensures supabase query does not exceed limit 
     for key in category_dict:
         maxPulls=category_dict[key]
         counter=0
 
-        while(counter<600):
+        while(counter<3000):
             
             #Fetch papers from arXiv
             xml_data = fetch_arxiv_data(key,pullSize,counter)
@@ -57,7 +57,7 @@ def main():
     #print("FAISS contains",num_embeddings,"embeddings")
     
     if index:
-        query = "CSS"  # User query
+        query = "How do I collect data in a fair way"  # User query
         results = search(query, index)
 
         for result in results:

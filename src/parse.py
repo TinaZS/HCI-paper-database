@@ -1,11 +1,10 @@
 import xml.etree.ElementTree as ET
 from supabase_client import supabase
-import time
 
 def parse_arxiv_data(xml_data):
     """
-    Parses arXiv XML data, checking supabase for duplicates
-    Return new papers only
+    Parses arXiv XML data, checking Supabase for duplicates.
+    Returns only new papers that are not already in the database.
     """
     if xml_data is None:
         return []
@@ -13,41 +12,17 @@ def parse_arxiv_data(xml_data):
     root = ET.fromstring(xml_data)
     papers = []
 
-    #Extracting all titles
-    titles = [entry.find("{http://www.w3.org/2005/Atom}title").text.strip()
-              for entry in root.findall("{http://www.w3.org/2005/Atom}entry")]
+    existing_titles_response = supabase.table("new_papers").select("title").execute()
+    existing_titles = {row["title"] for row in existing_titles_response.data} if existing_titles_response.data else set()
 
-    #Check against supabase for existing titles
-    existing_titles = set()
-    batch_size = 500  # Adjust based on Supabase limits
+    seen_titles = set()
+    unique_papers = []
 
-    for i in range(0, len(titles), batch_size):
-        batch = titles[i:i + batch_size]
-
-        try:
-            response = supabase.table("papers").select("title").in_("title", batch).execute()
-
-            
-            if response.data:
-                existing_titles.update(row["title"] for row in response.data)
-
-             # Add a 1-second delay between requests
-
-        except Exception as e:
-            print(f"Batch {i} failed: {e}")
-            time.sleep(1)
-        
-        if response.data:  # If Supabase returns data, add to existing_titles set
-            existing_titles.update(row["title"] for row in response.data)
-
-
-    #Parse & Skip
     for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
         title = entry.find("{http://www.w3.org/2005/Atom}title").text.strip()
 
-
-        if title in existing_titles:
-            continue
+        if title in existing_titles or title in seen_titles:
+            continue  # Skip duplicates
 
         abstract = entry.find("{http://www.w3.org/2005/Atom}summary").text.strip()
         link = entry.find("{http://www.w3.org/2005/Atom}id").text.strip()
@@ -60,7 +35,7 @@ def parse_arxiv_data(xml_data):
         doi_element = entry.find("{http://arxiv.org/schemas/atom}doi")
         doi = doi_element.text.strip() if doi_element is not None else None
 
-        papers.append({
+        unique_papers.append({
             "title": title,
             "authors": authors,
             "abstract": abstract,
@@ -69,4 +44,6 @@ def parse_arxiv_data(xml_data):
             "doi": doi
         })
 
-    return papers
+        seen_titles.add(title)  
+
+    return unique_papers 
