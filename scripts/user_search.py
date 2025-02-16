@@ -2,8 +2,7 @@ from src.load_index import load_index
 from src.search import search
 from src.rebuild_faiss import needs_rebuild, rebuild_faiss 
 from src.config import FAISS_INDEX_FILENAME
-import time
-import json
+
 
 
 def user_search():
@@ -20,7 +19,7 @@ def user_search():
     index=load_index("faiss_index.index")
     
     if index:
-        query = ("What paper topics do you want to read about?")  # User query
+        query = ("fair data collection")  # User query
         results = search(query, index)
 
         for result in results:
@@ -28,4 +27,5 @@ def user_search():
     else:
         print("ERROR: result array is empty")
 
-user_search()
+if __name__ == "__main__":
+    user_search()
