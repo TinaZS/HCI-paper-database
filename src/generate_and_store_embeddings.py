@@ -9,13 +9,6 @@ index_filename = FAISS_INDEX_FILENAME
 embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 dimension = FAISS_DIMENSION
 
-""" try:
-    index = faiss.read_index(index_filename)
-    print(f"Loaded existing FAISS index from {index_filename}, current size: {index.ntotal}")
-except:
-    print("No FAISS index found. Creating a new FAISS index...")
-    index = faiss.IndexFlatIP(dimension)
-    faiss.write_index(index, index_filename) """
 
 
 def generate_and_store_embeddings(papers):

@@ -43,13 +43,12 @@ def needs_rebuild():
     embeddings, faiss_ids = fetch_embeddings_from_supabase()
 
 
-    if embeddings is None or len(embeddings) == 0:
-        print("No embeddings available to rebuild FAISS.")
-        return
+    
         
     if not os.path.exists(index_filename):
         print("FAISS index file not found. Rebuild required.")
         return True
+    
 
     try:
         index = faiss.read_index(index_filename)
@@ -71,7 +70,12 @@ def rebuild_faiss():
 
     if embeddings is None or len(embeddings) == 0:
         print("No embeddings available to rebuild FAISS.")
+
+        index = faiss.IndexFlatIP(dimension)
+        faiss.write_index(index, index_filename)
+
         return
+
 
     print(f"Rebuilding FAISS with {len(embeddings)} embeddings...")
 
@@ -83,4 +87,6 @@ def rebuild_faiss():
 
     # Save the new FAISS index
     faiss.write_index(index, index_filename)
+    
     print(f"FAISS index successfully rebuilt and saved as {index_filename}")
+    print(f"Faiss index currently at {index.ntotal} embeddings")

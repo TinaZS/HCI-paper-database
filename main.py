@@ -29,9 +29,9 @@ def main():
     pullSize=100 #this ensures supabase query does not exceed limit 
     for key in category_dict:
         maxPulls=category_dict[key]
-        counter=0
+        counter=1000
 
-        while(counter<3000):
+        while(counter<1500):
             
             #Fetch papers from arXiv
             xml_data = fetch_arxiv_data(key,pullSize,counter)
