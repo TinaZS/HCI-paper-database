@@ -6,16 +6,19 @@ export default function App() {
   const [results, setResults] = useState([]);
 
   function handleSearch(query) {
-    //console.log("Search Query:", query);
-
-    fetch("https://hci-paper-database.onrender.com", {
+    fetch("https://hci-paper-database.onrender.com/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query: query }),
+      body: JSON.stringify({ query }),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         console.log("Received Data:", data);
         setResults(data.results);
