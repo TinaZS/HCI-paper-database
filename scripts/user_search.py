@@ -18,7 +18,7 @@ def user_search(query, index):
 
     results = search(query, index)
 
-    print(f"View results: '{results}'")
+    print(f"Returning {len(results)} results for query: '{query}'")
 
     if not results:
         print(f"No results found for '{query}'")
