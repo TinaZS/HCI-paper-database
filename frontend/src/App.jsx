@@ -19,21 +19,18 @@ export default function App() {
       loadingBarRef.current.continuousStart();
 
       const startTime = performance.now(); // Start timing
-      console.log(`Start time is ${startTime}`)
+      console.log(`Start time is ${startTime}`);
 
-      const response = await fetch(
-        "https://hci-paper-database.onrender.com/search",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          mode: "cors",
-          cache: "no-store",
-          body: JSON.stringify({ query: trimmedQuery }),
-        }
-      );
+      const response = await fetch("http://127.0.0.1:10000/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        mode: "cors",
+        cache: "no-store",
+        body: JSON.stringify({ query: trimmedQuery }),
+      });
 
       const endTime = performance.now(); // End timing
-      console.log(`End time is ${endTime}`)
+      console.log(`End time is ${endTime}`);
       console.log(`Search request took ${endTime - startTime}ms`);
 
       if (!response.ok) {
