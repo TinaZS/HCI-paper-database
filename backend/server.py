@@ -16,7 +16,7 @@ FAISS_INDEX_PATH = "faiss_index.index"
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 def download_faiss_index():
     """Download FAISS index from Supabase Storage."""
