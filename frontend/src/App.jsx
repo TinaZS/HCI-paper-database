@@ -15,7 +15,7 @@ export default function App() {
 
       console.log("Sending search request...");
       const response = await fetch(
-        "hci-paper-database-production.up.railway.app",
+        "https://hci-paper-database-production.up.railway.app/search",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
