@@ -1,11 +1,14 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from scripts.user_search import user_search
+
 from io import BytesIO
 import sys
 import os
 import requests 
 import faiss  # Add this line
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from scripts.user_search import user_search
 
 
 
