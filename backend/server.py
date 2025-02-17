@@ -38,8 +38,10 @@ download_faiss_index()
 
 if os.path.exists(FAISS_INDEX_PATH):
     index = faiss.read_index(FAISS_INDEX_PATH)
+    print("FAISS index loaded successfully! Total vectors:", index.ntotal)
+
 else:
-    raise RuntimeError("FAISS index could not be loaded! Check download.")
+    raise RuntimeError("FAISS index could not be loaded! Check download")
 
 
 
@@ -51,12 +53,12 @@ def search():
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
-    results = user_search(query)
+    results = user_search(query, index)
 
     return jsonify({"results": results})
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Default to 5000 if PORT is not set
+    port = int(os.environ.get("PORT", 10000))  # Default to 10000 as per Render
     print(f"Starting Flask API on port {port}")
     app.run(host="0.0.0.0", port=port, debug=False)
 

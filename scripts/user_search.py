@@ -6,18 +6,15 @@ import os
 
 
 FAISS_INDEX_PATH = "faiss_index.index"
-def user_search(query):
-    print(f"Loading FAISS index from: {FAISS_INDEX_PATH}")  
 
-    # Load FAISS index
-    index = load_index(FAISS_INDEX_PATH)
+
+def user_search(query, index):
 
     if not index:
-        print("ERROR: FAISS index failed to load")
+        print("ERROR: FAISS index is not loaded")
         return []  
-
-    print(f"FAISS index loaded successfully! Total vectors: {index.ntotal}") 
-
+    
+    print(f"Using preloaded FAISS index. Total vectors: {index.ntotal}") 
 
     results = search(query, index)
 
