@@ -10,6 +10,7 @@ import faiss  # Add this line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
 
+FAISS_INDEX_PATH = "faiss_index.index"
 
 
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
@@ -19,16 +20,27 @@ CORS(app)
 
 def download_faiss_index():
     """Download FAISS index from Supabase Storage."""
+    if os.path.exists(FAISS_INDEX_PATH):
+        print("FAISS index already exists. Skipping download.")
+        return  # Skip downloading
+
+    print("Downloading FAISS index from Supabase...")
     response = requests.get(FAISS_STORAGE_URL)
     if response.status_code == 200:
-        with open("faiss_index.index", "wb") as f:
+        with open(FAISS_INDEX_PATH, "wb") as f:
             f.write(response.content)
-        print("FAISS index downloaded successfully from Supabase")
+        print("FAISS index downloaded successfully.")
     else:
         print("ERROR: Failed to download FAISS index from Supabase")
 
+
 download_faiss_index()
-index = faiss.read_index("faiss_index.index")
+
+if os.path.exists(FAISS_INDEX_PATH):
+    index = faiss.read_index(FAISS_INDEX_PATH)
+else:
+    raise RuntimeError("FAISS index could not be loaded! Check download.")
+
 
 
 @app.route("/search", methods=["POST"])
