@@ -5,27 +5,36 @@ import DisplayResults from "./components/DisplayResults";
 export default function App() {
   const [results, setResults] = useState([]);
 
-  function handleSearch(query) {
-    fetch("https://hci-paper-database.onrender.com/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+  async function handleSearch(query) {
+    try {
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) {
+        console.warn("Ignoring empty search query.");
+        return; // Stop execution if query is empty
+      }
+
+      console.log("Sending search request...");
+      const response = await fetch(
+        "https://hci-paper-database.onrender.com/search",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          mode: "cors",
+          cache: "no-store",
+          body: JSON.stringify({ query: trimmedQuery }),
         }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("Received Data:", data);
-        setResults(data.results);
-      })
-      .catch((error) => {
-        console.error("Error fetching results:", error);
-      });
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Received Data:", data);
+      setResults(data.results);
+    } catch (error) {
+      console.error("Error fetching results:", error);
+    }
   }
 
   return (

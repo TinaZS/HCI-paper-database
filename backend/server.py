@@ -1,11 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-from io import BytesIO
 import sys
 import os
 import requests 
-import faiss  # Add this line
+import faiss  
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
@@ -16,7 +14,8 @@ FAISS_INDEX_PATH = "faiss_index.index"
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app, resources={r"/search": {"origins": "*"}}, supports_credentials=True, max_age=31536000) 
+
 
 def download_faiss_index():
     """Download FAISS index from Supabase Storage."""
