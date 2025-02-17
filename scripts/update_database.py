@@ -16,6 +16,7 @@ def update_database():
         print("No need to rebuild FAISS from Supabase")
 
     category_dict = {"cs.HC": 0}
+    #CS AI
 
     # Get category size
     for key in category_dict:

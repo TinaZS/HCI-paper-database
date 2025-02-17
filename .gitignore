@@ -1,4 +1,21 @@
+#Frontend
+node_modules/
+dist/
+.vite/
+.vscode/
+.env.local
+.DS_Store
+
+#Backend
 venv/
 __pycache__/
+*.pyc
+instance/
 .env
+supabase_env.json
 *.index
+
+#System Files
+*.log
+Thumbs.db
+.DS_Store

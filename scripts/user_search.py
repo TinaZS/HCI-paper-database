@@ -1,31 +1,37 @@
 from src.load_index import load_index
 from src.search import search
-from src.rebuild_faiss import needs_rebuild, rebuild_faiss 
-from src.config import FAISS_INDEX_FILENAME
+from src.rebuild_faiss import needs_rebuild, rebuild_faiss
+import sys
+import os
 
 
+FAISS_INDEX_PATH = "faiss_index.index"
+def user_search(query):
+    print(f"Loading FAISS index from: {FAISS_INDEX_PATH}")  
 
-def user_search():
+    # Load FAISS index
+    index = load_index(FAISS_INDEX_PATH)
 
-    if needs_rebuild():
-        print("Rebuilding FAISS before proceeding...")
-        rebuild_faiss()
-    else:
-        print("No need to rebuild FAISS from supabase")
+    if not index:
+        print("ERROR: FAISS index failed to load")
+        return []  
 
-   #Load FAISS index and run search
-    index = load_index(FAISS_INDEX_FILENAME)
-    
-    index=load_index("faiss_index.index")
-    
-    if index:
-        query = ("fair data collection")  # User query
-        results = search(query, index)
+    print(f"FAISS index loaded successfully! Total vectors: {index.ntotal}") 
 
-        for result in results:
-            print(f"Title: {result['title']}\n  {result['link']}\n")
-    else:
-        print("ERROR: result array is empty")
 
-if __name__ == "__main__":
-    user_search()
+    results = search(query, index)
+
+    print(f"View results: '{results}'")
+
+    if not results:
+        print(f"No results found for '{query}'")
+
+    return [
+        {
+            "title": result["title"],
+            "abstract": result.get("abstract", "No abstract available"),
+            "datePublished": result.get("published_date", "Unknown"),
+            "link": result["link"],
+        }
+        for result in results
+    ]
