@@ -8,7 +8,7 @@ export default function App() {
   function handleSearch(query) {
     //console.log("Search Query:", query);
 
-    fetch("http://127.0.0.1:5001/search", {
+    fetch("https://hci-paper-database.onrender.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
