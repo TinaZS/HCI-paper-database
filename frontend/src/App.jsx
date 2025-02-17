@@ -14,16 +14,13 @@ export default function App() {
       }
 
       console.log("Sending search request...");
-      const response = await fetch(
-        "https://hci-paper-database-production.up.railway.app/search",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          mode: "cors",
-          cache: "no-store",
-          body: JSON.stringify({ query: trimmedQuery }),
-        }
-      );
+      const response = await fetch("https://hci-paper-database.onrender.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        mode: "cors",
+        cache: "no-store",
+        body: JSON.stringify({ query: trimmedQuery }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
