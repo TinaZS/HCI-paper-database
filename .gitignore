@@ -13,7 +13,7 @@ __pycache__/
 instance/
 .env
 supabase_env.json
-*.index
+
 
 #System Files
 *.log
