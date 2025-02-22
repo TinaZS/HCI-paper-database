@@ -4,6 +4,7 @@ import sys
 import os
 import requests 
 import faiss  
+import time  # Import time for timing tests
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
@@ -37,8 +38,10 @@ def download_faiss_index():
 download_faiss_index()
 
 if os.path.exists(FAISS_INDEX_PATH):
+    start_time = time.time()  # Start timing
     index = faiss.read_index(FAISS_INDEX_PATH)
-    print("FAISS index loaded successfully! Total vectors:", index.ntotal)
+    load_time = time.time() - start_time  # Calculate load time
+    print(f"FAISS index loaded successfully in {load_time:.2f} seconds! Total vectors: {index.ntotal}")
 
 else:
     raise RuntimeError("FAISS index could not be loaded! Check download")
@@ -53,7 +56,11 @@ def search():
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
+    start_time = time.time()  # Start timing for search
     results = user_search(query, index)
+    search_time = time.time() - start_time  # Calculate search time
+
+    print(f"Search executed in {search_time:.2f} seconds.")
 
     return jsonify({"results": results})
 
