@@ -18,6 +18,8 @@ export default function App() {
       console.log("Sending search request...");
       loadingBarRef.current.continuousStart();
 
+      const startTime = performance.now(); // Start timing
+
       const response = await fetch(
         "https://hci-paper-database.onrender.com/search",
         {
@@ -28,6 +30,9 @@ export default function App() {
           body: JSON.stringify({ query: trimmedQuery }),
         }
       );
+
+      const endTime = performance.now(); // End timing
+      console.log(`Search request took ${endTime - startTime}ms`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);

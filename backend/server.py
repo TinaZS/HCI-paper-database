@@ -57,8 +57,11 @@ def search():
         return jsonify({"error": "No query provided"}), 400
 
     start_time = time.time()  # Start timing for search
+    print(f"Timestamp at user_search start: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
     results = user_search(query, index)
     search_time = time.time() - start_time  # Calculate search time
+    print(f"Timestamp at user_search end: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
+
 
     print(f"Search executed in {search_time:.2f} seconds.")
 
