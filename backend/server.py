@@ -48,16 +48,24 @@ else:
 
 @app.route("/search", methods=["POST"])
 def search():
-    print(f"Timestamp at start of search: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
+    first_time=time.time()
+    first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
+    print(f"Timestamp at start of search function: {first_timestamp}")
     data = request.get_json()
     query = data.get("query", "").strip()
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
-    print(f"Timestamp at user_search start: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
+    start_time = time.time()  # Start timing for search
+    start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
+    print(f"Timestamp at user_search start: {start_timestamp}")
+
     results = user_search(query, index)
-    print(f"Timestamp at user_search end: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
+
+    end_time = time.time()  # Calculate search time
+    end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
+    print(f"Timestamp at user_search end: {end_timestamp}")
 
     return jsonify({"results": results})
 
