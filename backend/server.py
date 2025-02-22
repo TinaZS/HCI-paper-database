@@ -38,10 +38,8 @@ def download_faiss_index():
 download_faiss_index()
 
 if os.path.exists(FAISS_INDEX_PATH):
-    start_time = time.time()  # Start timing
     index = faiss.read_index(FAISS_INDEX_PATH)
-    load_time = time.time() - start_time  # Calculate load time
-    print(f"FAISS index loaded successfully in {load_time:.2f} seconds! Total vectors: {index.ntotal}")
+    print(f"FAISS index loaded successfully! Total vectors: {index.ntotal}")
 
 else:
     raise RuntimeError("FAISS index could not be loaded! Check download")
@@ -50,20 +48,16 @@ else:
 
 @app.route("/search", methods=["POST"])
 def search():
+    print(f"Timestamp at start of search: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
     data = request.get_json()
     query = data.get("query", "").strip()
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
-    start_time = time.time()  # Start timing for search
     print(f"Timestamp at user_search start: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
     results = user_search(query, index)
-    search_time = time.time() - start_time  # Calculate search time
     print(f"Timestamp at user_search end: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
-
-
-    print(f"Search executed in {search_time:.2f} seconds.")
 
     return jsonify({"results": results})
 

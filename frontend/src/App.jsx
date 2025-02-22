@@ -19,6 +19,7 @@ export default function App() {
       loadingBarRef.current.continuousStart();
 
       const startTime = performance.now(); // Start timing
+      console.log(`Start time is ${startTime}`)
 
       const response = await fetch(
         "https://hci-paper-database.onrender.com/search",
@@ -32,6 +33,7 @@ export default function App() {
       );
 
       const endTime = performance.now(); // End timing
+      console.log(`End time is ${endTime}`)
       console.log(`Search request took ${endTime - startTime}ms`);
 
       if (!response.ok) {
