@@ -12,7 +12,26 @@ def search(query, index, model, k=6):
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
     print(f"Timestamp at start of inner search function: {first_timestamp}")
 
-    query_embedding = model.encode(query).astype("float32").reshape(1, -1)
+    #query_embedding = model.encode(query).astype("float32").reshape(1, -1)
+
+    # Encoding the query
+    encode_start = time.time()
+    query_embedding = model.encode(query)
+    encode_time = (time.time() - encode_start)*1000
+    print("encode time is ",encode_time)
+
+    # Casting to float32
+    cast_start = time.time()
+    query_embedding = query_embedding.astype("float32")
+    cast_time = (time.time() - cast_start)*1000
+    print("cast time is ",cast_time)
+
+    # Reshaping the array
+    reshape_start = time.time()
+    query_embedding = query_embedding.reshape(1, -1)
+    reshape_time = (time.time() - reshape_start)*1000
+    print("reshape time is ",reshape_time)
+
 
     embedding_time=time.time()
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
