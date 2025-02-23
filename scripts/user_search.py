@@ -9,8 +9,8 @@ import time
 FAISS_INDEX_PATH = "faiss_index.index"
 
 
-def user_search(query, index):
-
+def user_search(query, index, model):
+ 
     if not index:
         print("ERROR: FAISS index is not loaded")
         return []  
@@ -21,7 +21,7 @@ def user_search(query, index):
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at search start: {start_timestamp}")
 
-    results = search(query, index)
+    results = search(query, index, model)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
