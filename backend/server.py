@@ -5,14 +5,12 @@ import os
 import requests 
 import faiss  
 import time  # Import time for timing tests
+from sentence_transformers import SentenceTransformer
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
 
 FAISS_INDEX_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "faiss_index.index"))
-
-
-
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
 
 app = Flask(__name__)
@@ -44,6 +42,7 @@ if os.path.exists(FAISS_INDEX_PATH):
 else:
     raise RuntimeError("FAISS index could not be loaded! Check download")
 
+model = SentenceTransformer("all-MiniLM-L6-v2")  # Model stays in memory
 
 
 @app.route("/search", methods=["POST"])
@@ -63,7 +62,7 @@ def search():
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at user_search start: {start_timestamp}")
 
-    results = user_search(query, index)
+    results = user_search(query, index, model)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"

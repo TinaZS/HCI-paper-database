@@ -1,13 +1,11 @@
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from supabase_client import supabase 
 import time
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-dimension = 384
 
-def search(query, index, k=6):
+
+def search(query, index, model, k=6):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
     first_time=time.time()
