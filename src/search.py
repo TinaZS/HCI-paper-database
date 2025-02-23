@@ -2,26 +2,19 @@ import faiss
 import numpy as np
 from supabase_client import supabase 
 import time
-import os
-from dotenv import load_dotenv
 import requests
+from dotenv import load_dotenv
+import os
 
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+API_KEY = os.getenv("API_KEY")
 
-# Initialize the Supabase client
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")  # Replace with your Supabase project URL
-API_KEY = os.getenv("API_KEY")  # Replace with your Supabase service or anon key
-API_VERSION = "2023-05-15"  # Use the latest supported version
 
 def search(query, index, model, k=6):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
-    first_time=time.time()
-    first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
-    print(f"Timestamp at start of inner search function: {first_timestamp}")
-
-    #query_embedding = model.encode(query).astype("float32").reshape(1, -1)
-     # Query text
-    query_text = "LLM fairness in contemporary literature."
+    first_time = time.time()
+    print(f"Timestamp at start of search function: {first_time:.3f}")
 
     # Headers for the request
     headers = {
@@ -29,26 +22,50 @@ def search(query, index, model, k=6):
         "api-key": API_KEY
     }
 
-    # Payload with the `dimensions` parameter
+    # Ensure embedding model and dimensions match
     payload = {
-    "model": "text-embedding-3-small",
-    "input": query_text,
-    "dimensions": 384  # Change this value between 512 and 1536
+        "model": "text-embedding-3-small",  # Change to "text-embedding-3-small" for different dimensions
+        "input": query,
+        "dimensions": 384
     }
 
     # Send request to Azure OpenAI
-    response = requests.post(f"{AZURE_OPENAI_ENDPOINT}?api-version={API_VERSION}", headers=headers, json=payload)
+    response = requests.post(AZURE_OPENAI_ENDPOINT, headers=headers, json=payload)
 
-    # Parse and print the response
     if response.status_code == 200:
-        embedding = response.json()["data"][0]["embedding"]
-        print("Embedding:", embedding)
+        query_embedding = np.array(response.json()["data"][0]["embedding"], dtype="float32").reshape(1, -1)
     else:
-        print("Error:", response.status_code, response.text)
-
+        print("Error fetching embedding:", response.status_code, response.text)
+        return []
 
     embedding_time=time.time()
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
     print(f"Timestamp at middle of inner search function: {embedding_timestamp}")
 
-    return 
+    distances, indices = index.search(query_embedding, k)
+
+    postquery_time=time.time()
+    postquery_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postquery_time)) + f".{int((postquery_time % 1) * 1000):03d}"
+    print(f"Timestamp at middle of inner search function: {postquery_timestamp}")
+
+    if indices[0][0] == -1:  # FAISS returns -1 if no results
+        print("No matching papers found.")
+        return []
+
+        # Extract FAISS indices as a list
+    faiss_ids = [int(idx) for idx in indices[0]]  # Ensure IDs are in list format
+
+    # Perform a single batch query to Supabase
+    response = supabase.table("new_papers") \
+        .select("title", "authors", "abstract", "link", "published_date") \
+        .in_("faiss_id", faiss_ids) \
+        .execute()
+    
+    postsupabase_time=time.time()
+    postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
+    print(f"Timestamp at end of inner search function: {postsupabase_timestamp}")
+
+    # Extract results (handle empty responses)
+    results = response.data if response.data else []
+
+    return results
