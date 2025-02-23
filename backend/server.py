@@ -1,22 +1,21 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-from io import BytesIO
 import sys
 import os
 import requests 
-import faiss  # Add this line
+import faiss  
+import time  # Import time for timing tests
+from sentence_transformers import SentenceTransformer
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
 
-FAISS_INDEX_PATH = "faiss_index.index"
-
-
+FAISS_INDEX_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "faiss_index.index"))
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/search": {"origins": "*"}}, supports_credentials=True, max_age=31536000) 
+
 
 def download_faiss_index():
     """Download FAISS index from Supabase Storage."""
@@ -38,22 +37,36 @@ download_faiss_index()
 
 if os.path.exists(FAISS_INDEX_PATH):
     index = faiss.read_index(FAISS_INDEX_PATH)
-    print("FAISS index loaded successfully! Total vectors:", index.ntotal)
+    print(f"FAISS index loaded successfully! Total vectors: {index.ntotal}")
 
 else:
     raise RuntimeError("FAISS index could not be loaded! Check download")
 
+model = SentenceTransformer("all-MiniLM-L6-v2")  # Model stays in memory
 
 
 @app.route("/search", methods=["POST"])
 def search():
+
+    first_time=time.time()
+    first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
+    print(f"Timestamp at start of user_search function: {first_timestamp}")
+    
     data = request.get_json()
     query = data.get("query", "").strip()
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
-    results = user_search(query, index)
+    start_time = time.time()  # Start timing for search
+    start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
+    print(f"Timestamp at user_search start: {start_timestamp}")
+
+    results = user_search(query, index, model)
+
+    end_time = time.time()  # Calculate search time
+    end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
+    print(f"Timestamp at user_search end: {end_timestamp}")
 
     return jsonify({"results": results})
 

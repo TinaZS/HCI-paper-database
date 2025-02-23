@@ -7,31 +7,44 @@ export default function App() {
   const [results, setResults] = useState([]);
   const loadingBarRef = useRef(null);
 
-  function handleSearch(query) {
-    loadingBarRef.current.continuousStart();
+  async function handleSearch(query) {
+    try {
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) {
+        console.warn("Ignoring empty search query.");
+        return;
+      }
 
-    fetch("http://127.0.0.1:10000/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ query }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("Received Data:", data);
-        setResults(data.results);
-      })
-      .catch((error) => console.error("Error fetching results:", error))
-      .finally(() => {
-        loadingBarRef.current.complete();
+      console.log("Sending search request...");
+      loadingBarRef.current.continuousStart();
+
+      const startTime = performance.now(); // Start timing
+      console.log(`Start time is ${startTime}`);
+
+      const response = await fetch("http://127.0.0.1:10000/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        mode: "cors",
+        cache: "no-store",
+        body: JSON.stringify({ query: trimmedQuery }),
       });
+
+      const endTime = performance.now(); // End timing
+      console.log(`End time is ${endTime}`);
+      console.log(`Search request took ${endTime - startTime}ms`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Received Data:", data);
+      setResults(data.results);
+    } catch (error) {
+      console.error("Error fetching results:", error);
+    } finally {
+      loadingBarRef.current.complete();
+    }
   }
 
   return (

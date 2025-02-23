@@ -1,26 +1,66 @@
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from supabase_client import supabase 
+import time
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-dimension = 384
 
-def search(query, index, k=6):
+
+def search(query, index, model, k=6):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
-    query_embedding = model.encode(query).astype("float32").reshape(1, -1)
+    first_time=time.time()
+    first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
+    print(f"Timestamp at start of inner search function: {first_timestamp}")
+
+    #query_embedding = model.encode(query).astype("float32").reshape(1, -1)
+
+    # Encoding the query
+    encode_start = time.time()
+    query_embedding = model.encode(query)
+    encode_time = (time.time() - encode_start)*1000
+    print("encode time is ",encode_time)
+
+    # Casting to float32
+    cast_start = time.time()
+    query_embedding = query_embedding.astype("float32")
+    cast_time = (time.time() - cast_start)*1000
+    print("cast time is ",cast_time)
+
+    # Reshaping the array
+    reshape_start = time.time()
+    query_embedding = query_embedding.reshape(1, -1)
+    reshape_time = (time.time() - reshape_start)*1000
+    print("reshape time is ",reshape_time)
+
+
+    embedding_time=time.time()
+    embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
+    print(f"Timestamp at middle of inner search function: {embedding_timestamp}")
+
     distances, indices = index.search(query_embedding, k)
+
+    postquery_time=time.time()
+    postquery_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postquery_time)) + f".{int((postquery_time % 1) * 1000):03d}"
+    print(f"Timestamp at middle of inner search function: {postquery_timestamp}")
 
     if indices[0][0] == -1:  # FAISS returns -1 if no results
         print("No matching papers found.")
         return []
 
-    results = []
-    for idx in indices[0]:
-        response = supabase.table("new_papers").select("title", "authors", "abstract", "link", "published_date").eq("faiss_id", idx).execute()
-        
-        if response.data:
-            results.append(response.data[0])  # Append the first match
+        # Extract FAISS indices as a list
+    faiss_ids = [int(idx) for idx in indices[0]]  # Ensure IDs are in list format
+
+    # Perform a single batch query to Supabase
+    response = supabase.table("new_papers") \
+        .select("title", "authors", "abstract", "link", "published_date") \
+        .in_("faiss_id", faiss_ids) \
+        .execute()
+    
+    postsupabase_time=time.time()
+    postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
+    print(f"Timestamp at end of inner search function: {postsupabase_timestamp}")
+
+    # Extract results (handle empty responses)
+    results = response.data if response.data else []
 
     return results
