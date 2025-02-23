@@ -2,6 +2,7 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from supabase_client import supabase 
+import time
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 dimension = 384
@@ -14,11 +15,16 @@ def search(query, index, k=6):
     print(f"Timestamp at start of inner search function: {first_timestamp}")
 
     query_embedding = model.encode(query).astype("float32").reshape(1, -1)
+
+    embedding_time=time.time()
+    embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
+    print(f"Timestamp at middle of inner search function: {embedding_timestamp}")
+
     distances, indices = index.search(query_embedding, k)
 
     postquery_time=time.time()
     postquery_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postquery_time)) + f".{int((postquery_time % 1) * 1000):03d}"
-    print(f"Timestamp at start of inner search function: {postquery_timestamp}")
+    print(f"Timestamp at middle of inner search function: {postquery_timestamp}")
 
     if indices[0][0] == -1:  # FAISS returns -1 if no results
         print("No matching papers found.")
@@ -35,7 +41,7 @@ def search(query, index, k=6):
     
     postsupabase_time=time.time()
     postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
-    print(f"Timestamp at start of inner search function: {postsupabase_timestamp}")
+    print(f"Timestamp at end of inner search function: {postsupabase_timestamp}")
 
     # Extract results (handle empty responses)
     results = response.data if response.data else []

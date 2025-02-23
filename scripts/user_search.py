@@ -3,6 +3,7 @@ from src.search import search
 from src.rebuild_faiss import needs_rebuild, rebuild_faiss
 import sys
 import os
+import time
 
 
 FAISS_INDEX_PATH = "faiss_index.index"
