@@ -48,9 +48,11 @@ else:
 
 @app.route("/search", methods=["POST"])
 def search():
+
     first_time=time.time()
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
-    print(f"Timestamp at start of search function: {first_timestamp}")
+    print(f"Timestamp at start of user_search function: {first_timestamp}")
+    
     data = request.get_json()
     query = data.get("query", "").strip()
 

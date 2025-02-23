@@ -9,18 +9,35 @@ dimension = 384
 def search(query, index, k=6):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
+    first_time=time.time()
+    first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
+    print(f"Timestamp at start of inner search function: {first_timestamp}")
+
     query_embedding = model.encode(query).astype("float32").reshape(1, -1)
     distances, indices = index.search(query_embedding, k)
+
+    postquery_time=time.time()
+    postquery_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postquery_time)) + f".{int((postquery_time % 1) * 1000):03d}"
+    print(f"Timestamp at start of inner search function: {postquery_timestamp}")
 
     if indices[0][0] == -1:  # FAISS returns -1 if no results
         print("No matching papers found.")
         return []
 
-    results = []
-    for idx in indices[0]:
-        response = supabase.table("new_papers").select("title", "authors", "abstract", "link", "published_date").eq("faiss_id", idx).execute()
-        
-        if response.data:
-            results.append(response.data[0])  # Append the first match
+        # Extract FAISS indices as a list
+    faiss_ids = [int(idx) for idx in indices[0]]  # Ensure IDs are in list format
+
+    # Perform a single batch query to Supabase
+    response = supabase.table("new_papers") \
+        .select("title", "authors", "abstract", "link", "published_date") \
+        .in_("faiss_id", faiss_ids) \
+        .execute()
+    
+    postsupabase_time=time.time()
+    postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
+    print(f"Timestamp at start of inner search function: {postsupabase_timestamp}")
+
+    # Extract results (handle empty responses)
+    results = response.data if response.data else []
 
     return results
