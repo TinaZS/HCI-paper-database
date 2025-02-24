@@ -65,7 +65,7 @@ export default function App() {
   const [results, setResults] = useState(defaultArticles);
   const loadingBarRef = useRef(null);
 
-  async function handleSearch(query) {
+  async function handleSearch(query, numPapers) {
     try {
       const trimmedQuery = query.trim();
       if (!trimmedQuery) {
@@ -76,10 +76,17 @@ export default function App() {
       console.log("Sending search request...");
       loadingBarRef.current.continuousStart();
 
+      const startTime = performance.now(); // Start timing
+      console.log(`Start time is ${startTime}`);
+
+      console.log(numPapers);
+
       const response = await fetch("http://127.0.0.1:10000/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: trimmedQuery }),
+        mode: "cors",
+        cache: "no-store",
+        body: JSON.stringify({ query: trimmedQuery, numPapers: numPapers }),
       });
 
       if (!response.ok) {
