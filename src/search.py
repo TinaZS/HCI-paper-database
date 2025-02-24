@@ -2,41 +2,16 @@ import faiss
 import numpy as np
 from supabase_client import supabase 
 import time
-import requests
-from dotenv import load_dotenv
-import os
-
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-API_KEY = os.getenv("API_KEY")
 
 
 def search(query, index, model, k=6):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
-    first_time = time.time()
-    print(f"Timestamp at start of search function: {first_time:.3f}")
+    first_time=time.time()
+    first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
+    print(f"Timestamp at start of inner search function: {first_timestamp}")
 
-    # Headers for the request
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": API_KEY
-    }
-
-    # Ensure embedding model and dimensions match
-    payload = {
-        "model": "text-embedding-3-small",  # Change to "text-embedding-3-small" for different dimensions
-        "input": query,
-        "dimensions": 384
-    }
-
-    # Send request to Azure OpenAI
-    response = requests.post(AZURE_OPENAI_ENDPOINT, headers=headers, json=payload)
-
-    if response.status_code == 200:
-        query_embedding = np.array(response.json()["data"][0]["embedding"], dtype="float32").reshape(1, -1)
-    else:
-        print("Error fetching embedding:", response.status_code, response.text)
-        return []
+    query_embedding = model.encode(query).astype("float32").reshape(1, -1)
 
     embedding_time=time.time()
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
