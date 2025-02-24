@@ -54,6 +54,7 @@ def search():
     
     data = request.get_json()
     query = data.get("query", "").strip()
+    numPapers=data.get("numPapers","").strip()
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
@@ -62,7 +63,7 @@ def search():
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at user_search start: {start_timestamp}")
 
-    results = user_search(query, index, model)
+    results = user_search(query, index, model, numPapers)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"

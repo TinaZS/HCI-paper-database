@@ -2,11 +2,12 @@ import { useState } from "react";
 
 export default function QueryInput({ onSearch }) {
   const [query, setQuery] = useState("");
+  const [numPapers, setNumPapers] = useState("");
 
   function handleSubmit(event) {
     event.preventDefault();
-    if (!query.trim()) return;
-    onSearch(query);
+    if (!query.trim() || !numPapers) return;
+    onSearch(query, numPapers);
   }
 
   return (
@@ -20,6 +21,13 @@ export default function QueryInput({ onSearch }) {
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         className="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+      />
+      <input
+        type="number"
+        placeholder="# papers to return..."
+        value={numPapers}
+        onChange={(event) => setNumPapers(event.target.value)}
+        className="w-45 p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
       />
       <button
         type="submit"
