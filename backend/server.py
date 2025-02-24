@@ -62,9 +62,6 @@ def search():
     else:
         numPapers = int(numPapers)
 
-
-
-
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
@@ -79,6 +76,11 @@ def search():
     print(f"Timestamp at user_search end: {end_timestamp}")
 
     return jsonify({"results": results})
+
+@app.route("/ping", methods=["GET"])
+def ping():
+    return jsonify({"status": "alive"}), 200
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # Default to 10000 as per Render
