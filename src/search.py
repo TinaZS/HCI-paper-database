@@ -4,7 +4,8 @@ from supabase_client import supabase
 import time
 
 
-def search(query, index, model, k=6):
+
+def search(query, index, model, k):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
     first_time=time.time()
@@ -18,6 +19,13 @@ def search(query, index, model, k=6):
     print(f"Timestamp at middle of inner search function: {embedding_timestamp}")
 
     distances, indices = index.search(query_embedding, k)
+
+    similarity_scores = []
+    for distance in distances[0]:
+        # For L2 distance
+        similarity_score = 1 / (1 + distance)  # Inverse of distance
+        similarity_scores.append(similarity_score)
+    print(similarity_scores)
 
     postquery_time=time.time()
     postquery_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postquery_time)) + f".{int((postquery_time % 1) * 1000):03d}"
