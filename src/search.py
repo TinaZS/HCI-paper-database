@@ -39,7 +39,8 @@ def search(query, index, model, k):
 
     distances, indices = index.search(query_embedding, k)
 
-     for distance in distances[0]:
+    similarity_scores = []
+    for distance in distances[0]:
         # For L2 distance
         similarity_score = 1 / (1 + distance)  # Inverse of distance
         similarity_scores.append(similarity_score)

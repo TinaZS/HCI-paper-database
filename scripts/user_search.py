@@ -21,7 +21,9 @@ def user_search(query, index, model, numPapers):
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at search start: {start_timestamp}")
 
+    print(f"Numpapers is {numPapers}")
     results = search(query, index, model, numPapers)
+    print(f"LenResult is {len(results)}")
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"

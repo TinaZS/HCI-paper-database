@@ -54,7 +54,16 @@ def search():
     
     data = request.get_json()
     query = data.get("query", "").strip()
-    numPapers=data.get("numPapers","").strip()
+    
+
+    numPapers = data.get("numPapers")
+    if not numPapers or not str(numPapers).isdigit():
+        numPapers = 6  # Default to 6 if missing or invalid
+    else:
+        numPapers = int(numPapers)
+
+
+
 
     if not query:
         return jsonify({"error": "No query provided"}), 400

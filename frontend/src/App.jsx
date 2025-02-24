@@ -65,7 +65,7 @@ export default function App() {
   const [results, setResults] = useState(defaultArticles);
   const loadingBarRef = useRef(null);
 
-  async function handleSearch(query, numPapers) {
+  async function handleSearch(query, numPapers = 6) {
     try {
       const trimmedQuery = query.trim();
       if (!trimmedQuery) {
