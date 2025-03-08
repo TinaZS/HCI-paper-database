@@ -12,7 +12,13 @@ load_dotenv()
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-AZURE_OPENAI_API_VERSION = "2025-02-01-preview"
+AZURE_OPENAI_API_VERSION = "2023-05-15"
+
+client = openai.AzureOpenAI(
+    api_key=AZURE_OPENAI_API_KEY,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_version=AZURE_OPENAI_API_VERSION
+)
 
 def normalize_l2(x):
     """Normalize an embedding using L2 norm."""
@@ -21,23 +27,21 @@ def normalize_l2(x):
     return x if norm == 0 else x / norm
 
 def get_openai_embedding(text):
-    """Get the embedding for a given text using Azure OpenAI with dimension reduction to 384."""
-    response = openai.Embedding.create(
+    """Get embedding from Azure OpenAI with dimension reduction to 384."""
+    response = client.embeddings.create(
+        model=AZURE_OPENAI_DEPLOYMENT,
         input=text,
-        engine=AZURE_OPENAI_DEPLOYMENT,
-        api_key=AZURE_OPENAI_API_KEY,
-        base_url=AZURE_OPENAI_ENDPOINT,
-        api_version=AZURE_OPENAI_API_VERSION,
-        encoding_format="float",  # Ensure output is float format
-        dimensions=384  # Reduce the embedding size to 384
+        encoding_format="float",
+        dimensions=384  # Ensure embedding is 384-dimensional
     )
 
-    embedding = np.array(response["data"][0]["embedding"], dtype=np.float32)
+    embedding = np.array(response.data[0].embedding, dtype=np.float32)
 
     # Ensure embedding is 384-dimensional and normalize it
     assert embedding.shape[0] == 384, f"Unexpected embedding dimension: {embedding.shape[0]}"
     return normalize_l2(embedding).reshape(1, -1)
 
+  
 
 def search(query, index, model, k):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
