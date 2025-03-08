@@ -17,11 +17,12 @@ FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/
 app = Flask(__name__)
 
 CORS(app, 
-     resources={r"/*": {"origins": "*"}},  # Apply CORS to all routes
+     resources={r"/*": {"origins": "https://hci-paper-database.vercel.app"}}, 
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      methods=["GET", "POST", "OPTIONS"]
 )
+
 
 @app.before_request
 def handle_preflight():
