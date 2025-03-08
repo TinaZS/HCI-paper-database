@@ -36,7 +36,7 @@ def get_openai_embedding(text):
 
     return embedding.reshape(1, -1)  
 
-def search(query, index, model, k):
+def search(query, index, k):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
     first_time=time.time()
