@@ -3,11 +3,11 @@ import faiss
 import numpy as np
 from supabase_client import supabase
 import os
-from src.config import FAISS_INDEX_FILENAME, FAISS_DIMENSION
+from src.config import FAISS_INDEX_FILENAME
 
 
 index_filename = FAISS_INDEX_FILENAME
-dimension = FAISS_DIMENSION 
+dimension = 1536 
 
 
 def fetch_embeddings_from_supabase():

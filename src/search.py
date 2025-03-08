@@ -20,28 +20,21 @@ client = openai.AzureOpenAI(
     api_version=AZURE_OPENAI_API_VERSION
 )
 
-def normalize_l2(x):
-    """Normalize an embedding using L2 norm."""
-    x = np.array(x)
-    norm = np.linalg.norm(x)
-    return x if norm == 0 else x / norm
 
 def get_openai_embedding(text):
-    """Get embedding from Azure OpenAI with dimension reduction to 384."""
+    """Get embedding from Azure OpenAI using full 1536 dimensions."""
     response = client.embeddings.create(
         model=AZURE_OPENAI_DEPLOYMENT,
         input=text,
-        encoding_format="float",
-        dimensions=384  # Ensure embedding is 384-dimensional
+        encoding_format="float" 
     )
 
-    embedding = np.array(response.data[0].embedding, dtype=np.float32)
+    embedding = np.array(response.data[0].embedding, dtype=np.float32)  # Ensure FAISS-compatible float32 format
 
-    # Ensure embedding is 384-dimensional and normalize it
-    assert embedding.shape[0] == 384, f"Unexpected embedding dimension: {embedding.shape[0]}"
-    return normalize_l2(embedding).reshape(1, -1)
+    #take out this statement later
+    assert embedding.shape[0] == 1536, f"Unexpected embedding dimension: {embedding.shape[0]}"
 
-  
+    return embedding.reshape(1, -1)  
 
 def search(query, index, model, k):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""

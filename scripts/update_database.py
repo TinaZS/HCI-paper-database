@@ -5,6 +5,11 @@ from src.generate_and_store_embeddings import generate_and_store_embeddings
 from src.rebuild_faiss import needs_rebuild, rebuild_faiss
 from src.size_test import file_size_test
 from src.scrape_CS import get_category_size
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 def update_database():
     """Fetch new data from arXiv, update embeddings, and rebuild FAISS if needed."""
@@ -27,9 +32,9 @@ def update_database():
     pull_size = 100  # Ensures Supabase query does not exceed limit
 
     for key, max_pulls in category_dict.items():
-        counter = 10000
+        counter = 0
 
-        while counter < 10050:
+        while counter < 500:
             xml_data = fetch_arxiv_data(key, pull_size, counter)
 
             if not xml_data:

@@ -1,15 +1,32 @@
-from sentence_transformers import SentenceTransformer
+from openai import AzureOpenAI
+import os
 import numpy as np
 import faiss
 from supabase_client import supabase
-from src.config import FAISS_INDEX_FILENAME, FAISS_DIMENSION 
+from src.config import FAISS_INDEX_FILENAME
+from dotenv import load_dotenv
+
+load_dotenv()
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 
 
 index_filename = FAISS_INDEX_FILENAME
-embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-dimension = FAISS_DIMENSION
 
+client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    api_version="2023-05-15"  # Ensure correct version
+)
 
+def get_openai_embedding(text):
+    """Fetch embeddings from Azure OpenAI using the new API."""
+    response = client.embeddings.create(
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        input=text
+    )
+    return np.array(response.data[0].embedding, dtype="float32").tolist()
 
 def generate_and_store_embeddings(papers):
     """
@@ -41,7 +58,7 @@ def generate_and_store_embeddings(papers):
     start_faiss_id = index.ntotal
 
     for i, paper in enumerate(unique_papers):
-        embedding = embedding_model.encode(paper["abstract"]).astype("float32").tolist()
+        embedding = get_openai_embedding(paper["abstract"])
         paper["embedding"] = embedding
         paper["embedding_status"] = True
         paper["faiss_id"] = start_faiss_id + i
