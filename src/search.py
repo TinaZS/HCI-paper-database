@@ -2,7 +2,41 @@ import faiss
 import numpy as np
 from supabase_client import supabase 
 import time
+import openai
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+
+# Azure OpenAI Configuration from .env
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+AZURE_OPENAI_API_VERSION = "2025-02-01-preview"
+
+def normalize_l2(x):
+    """Normalize an embedding using L2 norm."""
+    x = np.array(x)
+    norm = np.linalg.norm(x)
+    return x if norm == 0 else x / norm
+
+def get_openai_embedding(text):
+    """Get the embedding for a given text using Azure OpenAI with dimension reduction to 384."""
+    response = openai.Embedding.create(
+        input=text,
+        engine=AZURE_OPENAI_DEPLOYMENT,
+        api_key=AZURE_OPENAI_API_KEY,
+        base_url=AZURE_OPENAI_ENDPOINT,
+        api_version=AZURE_OPENAI_API_VERSION,
+        encoding_format="float",  # Ensure output is float format
+        dimensions=384  # Reduce the embedding size to 384
+    )
+
+    embedding = np.array(response["data"][0]["embedding"], dtype=np.float32)
+
+    # Ensure embedding is 384-dimensional and normalize it
+    assert embedding.shape[0] == 384, f"Unexpected embedding dimension: {embedding.shape[0]}"
+    return normalize_l2(embedding).reshape(1, -1)
 
 
 def search(query, index, model, k):
@@ -12,7 +46,7 @@ def search(query, index, model, k):
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
     print(f"Timestamp at start of inner search function: {first_timestamp}")
 
-    query_embedding = model.encode(query).astype("float32").reshape(1, -1)
+    query_embedding = get_openai_embedding(query)
 
     embedding_time=time.time()
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
