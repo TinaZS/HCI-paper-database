@@ -14,6 +14,8 @@ AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 AZURE_OPENAI_API_VERSION = "2023-05-15"
 
+
+
 client = openai.AzureOpenAI(
     api_key=AZURE_OPENAI_API_KEY,
     azure_endpoint=AZURE_OPENAI_ENDPOINT,
@@ -28,6 +30,9 @@ def get_openai_embedding(text):
         input=text,
         encoding_format="float" 
     )
+
+    print(f'Azure open ai deployment name: {AZURE_OPENAI_DEPLOYMENT}')
+
 
     embedding = np.array(response.data[0].embedding, dtype=np.float32)  # Ensure FAISS-compatible float32 format
 
