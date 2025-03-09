@@ -28,13 +28,16 @@ export default function App() {
 
       console.log(numPapers);
 
-      const response = await fetch("http://127.0.0.1:10000/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        mode: "cors",
-        cache: "no-store",
-        body: JSON.stringify({ query: trimmedQuery, numPapers: numPapers }),
-      });
+      const response = await fetch(
+        "https://hci-paper-database.onrender.com/search",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          mode: "cors",
+          cache: "no-store",
+          body: JSON.stringify({ query: trimmedQuery, numPapers: numPapers }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
