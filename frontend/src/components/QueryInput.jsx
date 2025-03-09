@@ -2,25 +2,27 @@ import { useState } from "react";
 
 export default function QueryInput({ onSearch }) {
   const [query, setQuery] = useState("");
-  const [numPapers, setNumPapers] = useState("");
+  const [numPapers, setNumPapers] = useState("6");
 
   function handleSubmit(event) {
     event.preventDefault();
-    if (!query.trim() || !numPapers) return;
-    onSearch(query, numPapers);
+    if (!query.trim()) return;
+
+    const papersToFetch = parseInt(numPapers) > 0 ? parseInt(numPapers) : 6;
+    onSearch(query, papersToFetch);
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-2xl mx-auto flex items-center gap-3"
+      className="w-full max-w-4xl mx-auto flex items-center gap-3"
     >
       <input
         type="text"
         placeholder="Enter your search query here..."
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+        className="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none w-full"
       />
       <input
         type="number"
