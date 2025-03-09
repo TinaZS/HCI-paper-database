@@ -1,0 +1,15 @@
+name: Keep Server Warm
+
+on:
+  schedule:
+    - cron: "*/4 * * * *"
+
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  ping-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send a request to keep the server warm
+        run: curl -X GET "https://hci-paper-database.onrender.com/ping"  # Replace with your actual endpoint

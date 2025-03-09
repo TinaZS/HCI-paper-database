@@ -2,36 +2,48 @@ import faiss
 import numpy as np
 from supabase_client import supabase 
 import time
+import openai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Azure OpenAI Configuration from .env
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+AZURE_OPENAI_API_VERSION = "2023-05-15"
+
+client = openai.AzureOpenAI(
+    api_key=AZURE_OPENAI_API_KEY,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_version=AZURE_OPENAI_API_VERSION
+)
 
 
+def get_openai_embedding(text):
+    """Get embedding from Azure OpenAI using full 1536 dimensions."""
+    response = client.embeddings.create(
+        model=AZURE_OPENAI_DEPLOYMENT,
+        input=text,
+        encoding_format="float" 
+    )
 
-def search(query, index, model, k):
+    embedding = np.array(response.data[0].embedding, dtype=np.float32)  # Ensure FAISS-compatible float32 format
+
+    #take out this statement later
+    assert embedding.shape[0] == 1536, f"Unexpected embedding dimension: {embedding.shape[0]}"
+
+    return embedding.reshape(1, -1)  
+
+def search(query, index, k):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
     first_time=time.time()
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
     print(f"Timestamp at start of inner search function: {first_timestamp}")
 
-    #query_embedding = model.encode(query).astype("float32").reshape(1, -1)
-
-    # Encoding the query
-    encode_start = time.time()
-    query_embedding = model.encode(query)
-    encode_time = (time.time() - encode_start)*1000
-    print("encode time is ",encode_time)
-
-    # Casting to float32
-    cast_start = time.time()
-    query_embedding = query_embedding.astype("float32")
-    cast_time = (time.time() - cast_start)*1000
-    print("cast time is ",cast_time)
-
-    # Reshaping the array
-    reshape_start = time.time()
-    query_embedding = query_embedding.reshape(1, -1)
-    reshape_time = (time.time() - reshape_start)*1000
-    print("reshape time is ",reshape_time)
-
+    query_embedding = get_openai_embedding(query)
 
     embedding_time=time.time()
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"

@@ -5,7 +5,8 @@ import os
 import requests 
 import faiss  
 import time  # Import time for timing tests
-from sentence_transformers import SentenceTransformer
+
+
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
@@ -14,7 +15,19 @@ FAISS_INDEX_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "fais
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
 
 app = Flask(__name__)
-CORS(app, resources={r"/search": {"origins": "*"}}, supports_credentials=True, max_age=31536000) 
+
+CORS(app, 
+     resources={r"/*": {"origins": "https://hci-paper-database.vercel.app"}}, 
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     methods=["GET", "POST", "OPTIONS"]
+)
+
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        return jsonify({"message": "CORS preflight request"}), 200
 
 
 def download_faiss_index():
@@ -42,7 +55,6 @@ if os.path.exists(FAISS_INDEX_PATH):
 else:
     raise RuntimeError("FAISS index could not be loaded! Check download")
 
-model = SentenceTransformer("all-MiniLM-L6-v2")  # Model stays in memory
 
 
 @app.route("/search", methods=["POST"])
@@ -69,7 +81,7 @@ def search():
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at user_search start: {start_timestamp}")
 
-    results = user_search(query, index, model, numPapers)
+    results = user_search(query, index, numPapers)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
@@ -83,8 +95,10 @@ def ping():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Default to 10000 as per Render
+    port = int(os.environ.get("PORT", 10000))  # Render
     print(f"Starting Flask API on port {port}")
     app.run(host="0.0.0.0", port=port, debug=False)
 
 
+
+ 
