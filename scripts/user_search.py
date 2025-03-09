@@ -37,9 +37,11 @@ def user_search(query, index, numPapers):
     return [
         {
             "title": result["title"],
+            "authors": result["authors"],
             "abstract": result.get("abstract", "No abstract available"),
             "datePublished": result.get("published_date", "Unknown"),
             "link": result["link"],
+            "similarity_score": result["similarity_score"]
         }
         for result in results
     ]
