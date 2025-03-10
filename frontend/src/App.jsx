@@ -12,13 +12,18 @@ export default function App() {
   const [results, setResults] = useState(defaultArticles);
   const loadingBarRef = useRef(null);
 
-  async function handleSearch(query, numPapers = 6) {
+  async function handleSearch(query, numPapers = 6, useEmbeddings=false) {
     try {
-      const trimmedQuery = query.trim();
+      let trimmedQuery = query;  // Initialize trimmedQuery with the original query
+
+    // Only trim the query if we're not using embeddings
+    if (useEmbeddings == false) {
+      trimmedQuery = query.trim();  // Trim the query
       if (!trimmedQuery) {
         console.warn("Ignoring empty search query.");
         return;
       }
+    }
 
       console.log("Sending search request...");
       loadingBarRef.current.continuousStart();
@@ -27,6 +32,7 @@ export default function App() {
       console.log(`Start time is ${startTime}`);
 
       console.log(numPapers);
+      console.log(trimmedQuery);
 
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
       const response = await fetch(`${API_BASE_URL}/search`, {
@@ -34,7 +40,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         mode: "cors",
         cache: "no-store",
-        body: JSON.stringify({ query: trimmedQuery, numPapers: numPapers }),
+        body: JSON.stringify({ query: trimmedQuery, numPapers: numPapers,embedState: useEmbeddings}),
       });
 
       if (!response.ok) {
@@ -75,7 +81,7 @@ export default function App() {
             ))}
           </div>
         </div>
-        <DisplayResults results={results} />
+        <DisplayResults results={results} onSearch={handleSearch} />
       </div>
     </div>
   );

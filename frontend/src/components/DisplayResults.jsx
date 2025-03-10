@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import LikeButton from "./LikeButton";
 import categoriesData from "./categories.json"; // Import your JS
 
-export default function DisplayResults({ results }) {
+export default function DisplayResults({ results, onSearch }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
 
   // Flatten the category mapping from categories.json
@@ -81,6 +81,15 @@ export default function DisplayResults({ results }) {
                 ))}
               </div>
             )}
+
+            {/* Button to trigger search with the paper's title */}
+            <button
+              onClick={() => onSearch(paper.embedding,6,true)} // Trigger the search with the paper's title
+              className="mt-2 px-2 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
+            >
+              Find similar papers...
+            </button>
+
             {/* Heart Button in Bottom Right */}
             <LikeButton paperId={paper.paper_id} />
           </div>
