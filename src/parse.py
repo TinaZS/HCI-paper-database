@@ -35,13 +35,22 @@ def parse_arxiv_data(xml_data):
         doi_element = entry.find("{http://arxiv.org/schemas/atom}doi")
         doi = doi_element.text.strip() if doi_element is not None else None
 
+#Add category
+        primary_category_element = entry.find("{http://arxiv.org/schemas/atom}primary_category")
+        primary_category = primary_category_element.attrib["term"] if primary_category_element is not None else None
+        categories = [cat.attrib["term"] for cat in entry.findall("{http://www.w3.org/2005/Atom}category")]
+
+
         unique_papers.append({
             "title": title,
             "authors": authors,
             "abstract": abstract,
             "link": link,
             "published_date": published_date,
-            "doi": doi
+            "doi": doi, 
+            #"primary_category": primary_category,  # ✅ Add primary category
+            "categories": categories  # ✅ Add all categories
+
         })
 
         seen_titles.add(title)  

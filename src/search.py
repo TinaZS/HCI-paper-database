@@ -95,19 +95,6 @@ def search(query, index, k):
     print(response)
     
     
-    # Process the response and add similarity scores
-    if response.data:
-        for paper in response.data:
-            faiss_id = paper["faiss_id"]
-            if faiss_id in scores_dict:
-                paper["similarity_score"] = float(scores_dict[faiss_id])  # Add similarity score
-
-        # Remove FAISS IDs from response
-        for paper in response.data:
-            del paper["faiss_id"]
-
-    print(response)
-    
     
     postsupabase_time=time.time()
     postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
