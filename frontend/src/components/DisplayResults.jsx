@@ -23,6 +23,7 @@ export default function DisplayResults({ results }) {
             className="p-4 border rounded-md shadow bg-white relative"
           >
             <h3 className="font-semibold text-lg">{paper.title}</h3>
+            <p className="text">Score: {paper.similarity_score}</p>
             <p className="text-sm italic text-gray-600">
               Published: {formattedDate}
             </p>

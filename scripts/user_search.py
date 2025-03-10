@@ -35,12 +35,14 @@ def user_search(query, index, numPapers):
         print(f"No results found for '{query}'")
 
     return [
-    {
-        "paper_id": result["paper_id"],  # Add paper_id here
-        "title": result["title"],
-        "abstract": result.get("abstract", "No abstract available"),
-        "datePublished": result.get("published_date", "Unknown"),
-        "link": result["link"],
-    }
-    for result in results
+        {
+            "paper_id": result["paper_id"],
+            "title": result["title"],
+            "authors": result["authors"],
+            "abstract": result.get("abstract", "No abstract available"),
+            "datePublished": result.get("published_date", "Unknown"),
+            "link": result["link"],
+            "similarity_score": result["similarity_score"]
+        }
+        for result in results
     ]

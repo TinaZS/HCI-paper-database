@@ -56,12 +56,12 @@ def search(query, index, k):
 
     distances, indices = index.search(query_embedding, k)
 
-    similarity_scores = []
-    for distance in distances[0]:
-        # For L2 distance
-        similarity_score = 1 / (1 + distance)  # Inverse of distance
-        similarity_scores.append(similarity_score)
-    print(similarity_scores)
+    scores_dict = {}
+    print(distances)
+    print(indices)
+    for i in range(0,len(distances[0])):
+        scores_dict[indices[0][i]]=distances[0][i]
+    print(scores_dict)
 
     postquery_time=time.time()
     postquery_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postquery_time)) + f".{int((postquery_time % 1) * 1000):03d}"
@@ -76,10 +76,38 @@ def search(query, index, k):
 
     # Perform a single batch query to Supabase
     response = supabase.table("new_papers") \
-        .select("paper_id, title, authors, abstract, link, published_date") \
+        .select("faiss_id", "paper_id", "title", "authors", "abstract", "link", "published_date") \
         .in_("faiss_id", faiss_ids) \
         .execute()
 
+    
+    # Process the response and add similarity scores
+    if response.data:
+        for paper in response.data:
+            faiss_id = paper["faiss_id"]
+            if faiss_id in scores_dict:
+                paper["similarity_score"] = float(scores_dict[faiss_id])  # Add similarity score
+
+        # Remove FAISS IDs from response
+        for paper in response.data:
+            del paper["faiss_id"]
+
+    print(response)
+    
+    
+    # Process the response and add similarity scores
+    if response.data:
+        for paper in response.data:
+            faiss_id = paper["faiss_id"]
+            if faiss_id in scores_dict:
+                paper["similarity_score"] = float(scores_dict[faiss_id])  # Add similarity score
+
+        # Remove FAISS IDs from response
+        for paper in response.data:
+            del paper["faiss_id"]
+
+    print(response)
+    
     
     postsupabase_time=time.time()
     postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
@@ -87,5 +115,12 @@ def search(query, index, k):
 
     # Extract results (handle empty responses)
     results = response.data if response.data else []
+    print(results)
+
+    # Sorting the results by similarity_score in descending order
+    results = sorted(results, key=lambda x: x['similarity_score'], reverse=True)
+
+    for result in results:
+        result["similarity_score"] = round(result["similarity_score"],2)
 
     return results
