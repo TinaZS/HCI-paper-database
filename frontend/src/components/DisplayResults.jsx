@@ -33,7 +33,14 @@ export default function DisplayResults({ results }) {
           >
             <h3 className="font-semibold text-lg">{paper.title}</h3>
             <p className="text-sm italic text-gray-600">Score: {paper.similarity_score}</p>
-            <p className="text-sm italic text-gray-600">{paper.authors[0]}, et al.</p>
+
+            {/* Check if paper.authors exists and has at least one author */}
+            {paper.authors && paper.authors.length > 0 && (
+              <p className="text-sm italic text-gray-600">
+                {paper.authors[0]}, et al.
+              </p>
+            )}
+
             <p className="text-sm italic text-gray-600">
               Published: {formattedDate}
             </p>
