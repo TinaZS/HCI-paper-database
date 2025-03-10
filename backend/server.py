@@ -5,11 +5,18 @@ import os
 import requests 
 import faiss  
 import time  # Import time for timing tests
+import os
+import jwt  # PyJWT library to decode JWT tokens
 
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
+from supabase_client import supabase 
+from dotenv import load_dotenv
+
+load_dotenv()
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 FAISS_INDEX_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "faiss_index.index"))
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
@@ -17,10 +24,10 @@ FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/
 app = Flask(__name__)
 
 CORS(app, 
-     resources={r"/*": {"origins": "http://localhost:5173"}}, 
+     resources={r"/*": {"origins": [FRONTEND_URL]}}, 
      supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-     methods=["GET", "POST", "OPTIONS"]
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Access-Control-Allow-Credentials"],
+     methods=["GET", "POST", "OPTIONS", "DELETE"]
 )
 
 
@@ -88,6 +95,87 @@ def search():
     print(f"Timestamp at user_search end: {end_timestamp}")
 
     return jsonify({"results": results})
+
+def extract_user_id_from_token():
+    """Extract user_id from Authorization header."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None, jsonify({"error": "Missing or invalid token"}), 401
+
+    token = auth_header.split("Bearer ")[1]
+    try:
+        decoded_token = jwt.decode(token, options={"verify_signature": False})  # Decode the JWT
+        user_id = decoded_token.get("sub")
+        if not user_id:
+            return None, jsonify({"error": "Invalid token"}), 401
+        return user_id, None  # Return user_id if successful
+    except Exception as e:
+        return None, jsonify({"error": "Invalid token", "details": str(e)}), 401
+
+
+@app.route("/like", methods=["POST"])
+def like_paper():
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response  # Return error if token is invalid
+
+        data = request.get_json()
+        paper_id = data.get("paper_id")
+        if not paper_id:
+            return jsonify({"error": "Missing paper_id"}), 400
+
+        response = supabase.table("likes").insert({"user_id": user_id, "paper_id": paper_id}).execute()
+        return jsonify({"message": "Paper liked successfully!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
+
+@app.route("/unlike", methods=["POST"])
+def unlike_paper():
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response  # Return error if token is invalid
+
+        data = request.get_json()
+        paper_id = data.get("paper_id")
+        if not paper_id:
+            return jsonify({"error": "Missing paper_id"}), 400
+
+        response = supabase.table("likes").delete().match({"user_id": user_id, "paper_id": paper_id}).execute()
+
+        if hasattr(response, "data") and response.data is not None:
+            return jsonify({"message": "Like removed successfully"}), 200
+        else:
+            return jsonify({"error": "Failed to remove like"}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/liked_papers", methods=["GET"])
+def get_liked_papers():
+    print(f"✅ CORS configured for: {FRONTEND_URL}") 
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response  # Return error if token is invalid
+
+        print(f"Fetching liked papers for user: {user_id}")
+        response = supabase.table("likes").select("paper_id").eq("user_id", user_id).execute()
+
+        if not response or not hasattr(response, "data"):
+            print("Supabase response structure issue:", response)
+            return jsonify({"liked_papers": []}), 200
+
+        liked_paper_ids = [row["paper_id"] for row in response.data]
+        print(f"User {user_id} liked papers:", liked_paper_ids)  # Log the retrieved papers
+
+        return jsonify({"liked_papers": liked_paper_ids}), 200
+
+    except Exception as e:
+        print("Error fetching liked papers:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/ping", methods=["GET"])
 def ping():

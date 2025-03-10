@@ -13,7 +13,7 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full flex justify-end p-4 bg-gray-100">
+    <header className="w-full flex justify-end p-4 bg-gray-100 relative">
       {user ? (
         <div className="flex items-center gap-4">
           <span className="text-gray-700">Signed in as {user.email}</span>
@@ -33,8 +33,11 @@ export default function Header() {
         </button>
       )}
 
+      {/* ✅ Wrap modal in an overlay */}
       {isAuthModalOpen && (
-        <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+        </div>
       )}
     </header>
   );

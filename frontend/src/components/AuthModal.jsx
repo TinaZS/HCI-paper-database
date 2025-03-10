@@ -50,7 +50,7 @@ export default function AuthModal({ onClose }) {
       }
 
       setMessage(
-        "A confirmation link has been sent to your email. If you don’t receive it, you may already have an account. Try the magic login link instead."
+        "A confirmation link has been sent to your email. If you don’t receive it, you may already have an account. Try sign in or forgot password instead."
       );
     } else {
       // ✅ Handle Sign In

@@ -28,7 +28,8 @@ export default function App() {
 
       console.log(numPapers);
 
-      const response = await fetch("http://127.0.0.1:10000/search", {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await fetch(`${API_BASE_URL}/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         mode: "cors",

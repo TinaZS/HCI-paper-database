@@ -1,8 +1,10 @@
+import React from "react";
+import LikeButton from "./LikeButton";
+
 export default function DisplayResults({ results }) {
   return (
     <div className="mt-4 w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {results.map((paper, index) => {
-        // Convert the date to a readable format
+      {results.map((paper) => {
         let formattedDate = "Unknown";
         if (paper.datePublished && paper.datePublished !== "Unknown") {
           const dateObject = new Date(paper.datePublished);
@@ -16,7 +18,10 @@ export default function DisplayResults({ results }) {
         }
 
         return (
-          <div key={index} className="p-4 border rounded-md shadow bg-white">
+          <div
+            key={paper.paper_id}
+            className="p-4 border rounded-md shadow bg-white relative"
+          >
             <h3 className="font-semibold text-lg">{paper.title}</h3>
             <p className="text-sm italic text-gray-600">
               Published: {formattedDate}
@@ -34,6 +39,9 @@ export default function DisplayResults({ results }) {
             >
               Read More →
             </a>
+
+            {/* Heart Button in Bottom Right */}
+            <LikeButton paperId={paper.paper_id} />
           </div>
         );
       })}

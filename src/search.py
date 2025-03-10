@@ -76,9 +76,10 @@ def search(query, index, k):
 
     # Perform a single batch query to Supabase
     response = supabase.table("new_papers") \
-        .select("title", "authors", "abstract", "link", "published_date") \
+        .select("paper_id, title, authors, abstract, link, published_date") \
         .in_("faiss_id", faiss_ids) \
         .execute()
+
     
     postsupabase_time=time.time()
     postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
