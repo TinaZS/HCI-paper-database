@@ -80,7 +80,7 @@ def search(query, index, k=6, embedState=False):
 
     # Perform a single batch query to Supabase
     response = supabase.table("new_papers") \
-        .select("faiss_id", "paper_id", "title", "authors", "abstract", "link", "published_date","categories","embedding") \
+        .select("faiss_id", "paper_id", "title", "authors", "abstract", "link", "published_date","categories") \
         .in_("faiss_id", faiss_ids) \
         .execute()
 
