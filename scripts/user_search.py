@@ -42,7 +42,9 @@ def user_search(query, index, numPapers):
             "abstract": result.get("abstract", "No abstract available"),
             "datePublished": result.get("published_date", "Unknown"),
             "link": result["link"],
-            "similarity_score": result["similarity_score"]
+            "similarity_score": result["similarity_score"],
+            "categories": result["categories"],
+            "embedding": result["embedding"]
         }
         for result in results
     ]

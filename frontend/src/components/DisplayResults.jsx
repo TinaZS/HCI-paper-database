@@ -1,7 +1,16 @@
-import React from "react";
+import React, {useState} from "react";
 import LikeButton from "./LikeButton";
+import categoriesData from "./categories.json"; // Import your JS
 
 export default function DisplayResults({ results }) {
+  const [hoveredCategory, setHoveredCategory] = useState(null);
+
+  // Flatten the category mapping from categories.json
+  const categoryMap = Object.values(categoriesData).reduce(
+    (acc, subcategories) => ({ ...acc, ...subcategories }),
+    {}
+  );
+
   return (
     <div className="mt-4 w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 gap-4">
       {results.map((paper) => {
@@ -23,7 +32,8 @@ export default function DisplayResults({ results }) {
             className="p-4 border rounded-md shadow bg-white relative"
           >
             <h3 className="font-semibold text-lg">{paper.title}</h3>
-            <p className="text">Score: {paper.similarity_score}</p>
+            <p className="text-sm italic text-gray-600">Score: {paper.similarity_score}</p>
+            <p className="text-sm italic text-gray-600">{paper.authors[0]}, et al.</p>
             <p className="text-sm italic text-gray-600">
               Published: {formattedDate}
             </p>
@@ -40,7 +50,30 @@ export default function DisplayResults({ results }) {
             >
               Read More →
             </a>
+            {/* Categories displayed as rounded boxes with tooltip */}
+            {paper.categories && paper.categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {paper.categories.map((category, index) => (
+                  <div
+                    key={index}
+                    className="relative group"
+                    onMouseEnter={() => setHoveredCategory(category)}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                  >
+                    <span className="bg-blue-500 text-white text-sm px-3 py-1 rounded-full cursor-pointer">
+                      {category}
+                    </span>
 
+                    {/* Tooltip */}
+                    {hoveredCategory === category && (
+                      <div className="absolute left-1/2 transform -translate-x-1/2 -top-8 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {categoryMap[category] || "Unknown Category"}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             {/* Heart Button in Bottom Right */}
             <LikeButton paperId={paper.paper_id} />
           </div>
