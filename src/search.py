@@ -41,14 +41,18 @@ def get_openai_embedding(text):
 
     return embedding.reshape(1, -1)  
 
-def search(query, index, k):
+def search(query, index, k=6, embedState=False):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
     first_time=time.time()
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
     print(f"Timestamp at start of inner search function: {first_timestamp}")
 
-    query_embedding = get_openai_embedding(query)
+    if embedState==False:
+        query_embedding = get_openai_embedding(query)
+    else:
+        query_embedding = np.array(query).reshape(1,-1)
+        print(query_embedding.shape)
 
     embedding_time=time.time()
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"

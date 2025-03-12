@@ -72,14 +72,20 @@ def search():
     print(f"Timestamp at start of user_search function: {first_timestamp}")
     
     data = request.get_json()
-    query = data.get("query", "").strip()
-    
+    useEmbeddings=data.get("embedState")
+
+    if useEmbeddings==False:
+        query = data.get("query", "").strip()
+    else:
+        query=data.get("query","")
 
     numPapers = data.get("numPapers")
     if not numPapers or not str(numPapers).isdigit():
         numPapers = 6  # Default to 6 if missing or invalid
     else:
         numPapers = int(numPapers)
+    
+    
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
@@ -88,7 +94,7 @@ def search():
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at user_search start: {start_timestamp}")
 
-    results = user_search(query, index, numPapers)
+    results = user_search(query, index, numPapers,useEmbeddings)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
