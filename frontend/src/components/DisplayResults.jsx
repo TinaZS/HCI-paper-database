@@ -88,9 +88,9 @@ export default function DisplayResults({ results, onSearch }) {
               </div>
             )}
 
-            {/* Button to trigger search with the paper's title */}
+            {/* Button to trigger search with the paper's embeddngs */}
             <button
-              onClick={() => onSearch(paper.embedding,6,true)} // Trigger the search with the paper's title
+              onClick={() => onSearch(paper.embedding,6,true)} // Trigger the search with the paper's embeddings
               className="mt-2 px-2 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
             >
               Find similar papers...

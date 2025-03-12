@@ -78,16 +78,17 @@ def search():
         query = data.get("query", "").strip()
     else:
         query=data.get("query","")
+    print("query is ",query)
 
     numPapers = data.get("numPapers")
     if not numPapers or not str(numPapers).isdigit():
         numPapers = 6  # Default to 6 if missing or invalid
     else:
         numPapers = int(numPapers)
-    
-    
+    print("next query checkpoint")
 
     if not query:
+        print("bad query")
         return jsonify({"error": "No query provided"}), 400
 
     start_time = time.time()  # Start timing for search

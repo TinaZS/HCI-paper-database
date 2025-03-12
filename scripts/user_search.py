@@ -43,7 +43,8 @@ def user_search(query, index, numPapers,embedState):
             "datePublished": result.get("published_date", "Unknown"),
             "link": result["link"],
             "similarity_score": result["similarity_score"],
-            "categories": result["categories"]
+            "categories": result["categories"],
+            "embedding": result["embedding"]
         }
         for result in results
     ]

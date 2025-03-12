@@ -80,7 +80,7 @@ def search(query, index, k=6, embedState=False):
 
     # Perform a single batch query to Supabase
     response = supabase.table("new_papers") \
-        .select("faiss_id", "paper_id", "title", "authors", "abstract", "link", "published_date","categories") \
+        .select("faiss_id", "paper_id", "title", "authors", "abstract", "link", "published_date","categories","embedding") \
         .in_("faiss_id", faiss_ids) \
         .execute()
 
@@ -96,7 +96,7 @@ def search(query, index, k=6, embedState=False):
         for paper in response.data:
             del paper["faiss_id"]
 
-    print(response)
+    #print(response)
     
     
     
@@ -106,7 +106,8 @@ def search(query, index, k=6, embedState=False):
 
     # Extract results (handle empty responses)
     results = response.data if response.data else []
-    print(results)
+    #print(results)
+    
 
     # Sorting the results by similarity_score in descending order
     results = sorted(results, key=lambda x: x['similarity_score'], reverse=True)
