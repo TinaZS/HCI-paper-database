@@ -23,7 +23,11 @@ export default function LikeButton({ paperId }) {
 
         if (response.ok) {
           const data = await response.json();
-          setLiked(data.liked_papers.includes(paperId));
+          const likedPaperIds = data.liked_papers.map(
+            (paper) => paper.paper_id
+          );
+
+          setLiked(likedPaperIds.includes(paperId));
         }
       } catch (error) {
         console.error("Error fetching liked papers:", error);

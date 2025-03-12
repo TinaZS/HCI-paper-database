@@ -162,16 +162,37 @@ def get_liked_papers():
             return error_response  # Return error if token is invalid
 
         print(f"Fetching liked papers for user: {user_id}")
-        response = supabase.table("likes").select("paper_id").eq("user_id", user_id).execute()
+
+        # ✅ Join `likes` with `new_papers` to get full details
+        response = (
+            supabase
+            .table("likes")
+            .select("paper_id, new_papers(title, authors, abstract, published_date, link, categories)")
+            .eq("user_id", user_id)
+            .execute()
+        )
 
         if not response or not hasattr(response, "data"):
             print("Supabase response structure issue:", response)
             return jsonify({"liked_papers": []}), 200
 
-        liked_paper_ids = [row["paper_id"] for row in response.data]
-        print(f"User {user_id} liked papers:", liked_paper_ids)  # Log the retrieved papers
+        # ✅ Extract full paper data
+        liked_papers = [
+            {
+                "paper_id": row["paper_id"],
+                "title": row["new_papers"]["title"],
+                "authors": row["new_papers"]["authors"],
+                "abstract": row["new_papers"].get("abstract", "No abstract available"),
+                "datePublished": row["new_papers"].get("published_date", "Unknown"),
+                "link": row["new_papers"]["link"],
+                "categories": row["new_papers"]["categories"],
+            }
+            for row in response.data
+        ]
 
-        return jsonify({"liked_papers": liked_paper_ids}), 200
+        print(f"User {user_id} liked papers:", liked_papers)
+
+        return jsonify({"liked_papers": liked_papers}), 200
 
     except Exception as e:
         print("Error fetching liked papers:", str(e))

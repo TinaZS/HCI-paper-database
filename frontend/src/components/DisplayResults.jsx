@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import LikeButton from "./LikeButton";
 import categoriesData from "./categories.json"; // Import your JS
 
@@ -32,7 +32,13 @@ export default function DisplayResults({ results }) {
             className="p-4 border rounded-md shadow bg-white relative"
           >
             <h3 className="font-semibold text-lg">{paper.title}</h3>
-            <p className="text-sm italic text-gray-600">Score: {paper.similarity_score}</p>
+
+            {/* ✅ Only show score if available */}
+            {paper.similarity_score !== undefined && (
+              <p className="text-sm italic text-gray-600">
+                Score: {paper.similarity_score}
+              </p>
+            )}
 
             {/* Check if paper.authors exists and has at least one author */}
             {paper.authors && paper.authors.length > 0 && (

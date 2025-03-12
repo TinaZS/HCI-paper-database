@@ -1,12 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import QueryInput from "./components/QueryInput";
 import DisplayResults from "./components/DisplayResults";
 import LoadingBar from "react-top-loading-bar";
 import { defaultArticles, suggestedQueries } from "./constants";
-import Auth from "./components/AuthModal";
 import Header from "./components/Header";
-
-// Default articles to display on initial load
+import LikedPapers from "./components/LikedPapers";
 
 export default function App() {
   const [results, setResults] = useState(defaultArticles);
@@ -22,11 +21,6 @@ export default function App() {
 
       console.log("Sending search request...");
       loadingBarRef.current.continuousStart();
-
-      const startTime = performance.now(); // Start timing
-      console.log(`Start time is ${startTime}`);
-
-      console.log(numPapers);
 
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
       const response = await fetch(`${API_BASE_URL}/search`, {
@@ -54,28 +48,43 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4">
       <LoadingBar ref={loadingBarRef} color="#60A5FA" height={10} />
-      {/* Authentication Component (Positioned in the top-right corner) */}
-      <Header /> {/* Sign In button */}
+      <Header />
+
       <div className="w-full max-w-4xl">
-        <h1 className="text-3xl font-bold text-center mt-10 mb-6 text-gray-800">
-          HCI Paper Search
-        </h1>
-        <QueryInput onSearch={handleSearch} />
-        <div className="mt-4">
-          <h2 className="text-xl font-semibold mb-2">Suggested Searches:</h2>
-          <div className="flex gap-2 flex-wrap">
-            {suggestedQueries.map((query, index) => (
-              <button
-                key={index}
-                className="px-3 py-1 bg-blue-200 text-blue-700 rounded-md hover:bg-blue-300"
-                onClick={() => handleSearch(query)}
-              >
-                {query}
-              </button>
-            ))}
-          </div>
-        </div>
-        <DisplayResults results={results} />
+        <Routes>
+          {/* ✅ Home Page */}
+          <Route
+            path="/"
+            element={
+              <>
+                <h1 className="text-3xl font-bold text-center mt-10 mb-6 text-gray-800">
+                  HCI Paper Search
+                </h1>
+                <QueryInput onSearch={handleSearch} />
+                <div className="mt-4">
+                  <h2 className="text-xl font-semibold mb-2">
+                    Suggested Searches:
+                  </h2>
+                  <div className="flex gap-2 flex-wrap">
+                    {suggestedQueries.map((query, index) => (
+                      <button
+                        key={index}
+                        className="px-3 py-1 bg-blue-200 text-blue-700 rounded-md hover:bg-blue-300"
+                        onClick={() => handleSearch(query)}
+                      >
+                        {query}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <DisplayResults results={results} />
+              </>
+            }
+          />
+
+          {/* ✅ Liked Papers Page */}
+          <Route path="/saved" element={<LikedPapers />} />
+        </Routes>
       </div>
     </div>
   );
