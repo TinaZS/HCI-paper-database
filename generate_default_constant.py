@@ -12,6 +12,7 @@ for item in data["results"]:
         "link": item["link"], 
         "paper_id": item["paper_id"], 
         "categories": item["categories"],
+        
     })
 
 print(json.dumps(formatted_data, indent=2))

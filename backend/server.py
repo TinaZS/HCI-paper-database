@@ -174,7 +174,7 @@ def get_liked_papers():
         response = (
             supabase
             .table("likes")
-            .select("paper_id, new_papers(title, authors, abstract, published_date, link, categories)")
+            .select("paper_id, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
             .eq("user_id", user_id)
             .execute()
         )
@@ -193,6 +193,7 @@ def get_liked_papers():
                 "datePublished": row["new_papers"].get("published_date", "Unknown"),
                 "link": row["new_papers"]["link"],
                 "categories": row["new_papers"]["categories"],
+                "embedding": row["new_papers"]["embedding"]
             }
             for row in response.data
         ]

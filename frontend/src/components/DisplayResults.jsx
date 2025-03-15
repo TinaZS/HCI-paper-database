@@ -90,10 +90,10 @@ export default function DisplayResults({ results, onSearch }) {
 
             {/* Button to trigger search with the paper's embeddngs */}
             <button
-              onClick={() => onSearch(paper.embedding,6,true)} // Trigger the search with the paper's embeddings
-              className="mt-2 px-2 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
+              onClick={() => onSearch(paper.embedding, 6, true)}
+              className="mt-4 py-1 px-4 bg-gradient-to-r from-red-300 to-indigo-400 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:from-indigo-400 hover:to-blue-800 transition-all duration-200 ease-in-out"
             >
-              Find similar papers...
+              Find Similar Papers
             </button>
 
             {/* Heart Button in Bottom Right */}

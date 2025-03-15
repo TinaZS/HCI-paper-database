@@ -8,10 +8,10 @@ import Header from "./components/Header";
 import LikedPapers from "./components/LikedPapers";
 
 export default function App() {
-  const [results, setResults] = useState(defaultArticles);
+  const [results, setResults] = useState([]);
   const loadingBarRef = useRef(null);
 
-  async function handleSearch(query, numPapers=6, useEmbeddings=false) {
+  async function handleSearch(query, numPapers = 6, useEmbeddings = false) {
     try {
       let trimmedQuery = query; // Initialize trimmedQuery with the original query
 
@@ -92,33 +92,17 @@ export default function App() {
                     ))}
                   </div>
                 </div>
-                <DisplayResults results={results} onSearch={handleSearch}/>
+                <DisplayResults results={results} onSearch={handleSearch} />
               </>
             }
           />
 
           {/* ✅ Liked Papers Page */}
-          <Route path="/saved" element={<LikedPapers />} />
+          <Route
+            path="/saved"
+            element={<LikedPapers onSearch={handleSearch} />}
+          />
         </Routes>
-{/*         <h1 className="text-3xl font-bold text-center mt-10 mb-6 text-gray-800">
-          HCI Paper Search
-        </h1>
-        <QueryInput onSearch={handleSearch} />
-        <div className="mt-4">
-          <h2 className="text-xl font-semibold mb-2">Suggested Searches:</h2>
-          <div className="flex gap-2 flex-wrap">
-            {suggestedQueries.map((query, index) => (
-              <button
-                key={index}
-                className="px-3 py-1 bg-blue-200 text-blue-700 rounded-md hover:bg-blue-300"
-                onClick={() => handleSearch(query)}
-              >
-                {query}
-              </button>
-            ))}
-          </div>
-        </div>
-        <DisplayResults results={results} onSearch={handleSearch} /> */}
       </div>
     </div>
   );

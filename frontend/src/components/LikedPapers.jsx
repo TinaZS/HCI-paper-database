@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext";
 import DisplayResults from "./DisplayResults";
+import { useNavigate } from "react-router-dom"; // ✅ Import navigation
 
-export default function LikedPapers() {
+export default function LikedPapers({ onSearch }) {
   const { token } = useAuth();
   const [likedPapers, setLikedPapers] = useState([]);
   const [filteredPapers, setFilteredPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchLikedPapers() {
@@ -87,7 +89,13 @@ export default function LikedPapers() {
             : "You haven’t saved any papers yet."}
         </p>
       ) : (
-        <DisplayResults results={filteredPapers} /> // ✅ Display filtered results
+        <DisplayResults
+          results={filteredPapers}
+          onSearch={(embedding) => {
+            onSearch(embedding, 6, true); // ✅ Perform search
+            navigate("/"); // ✅ Redirect to Home page
+          }}
+        /> // ✅ Display filtered results
       )}
     </div>
   );

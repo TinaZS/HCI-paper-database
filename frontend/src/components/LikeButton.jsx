@@ -68,9 +68,13 @@ export default function LikeButton({ paperId }) {
   return (
     <button onClick={toggleLike} className="absolute bottom-2 right-2">
       <HeartIcon
-        className={`w-6 h-6 transform ${
-          liked ? "text-blue-500 scale-110" : "text-gray-400 scale-100"
-        } transition-transform fadeout`}
+        className={`w-6 h-6 transform transition-transform ${
+          liked ? "scale-110" : "scale-100"
+        }`}
+        style={{
+          color: liked ? "#ff4778" : "#A0AEC6", // Custom colors
+          transition: "color 0.3s ease-in-out, transform 0.2s ease-in-out",
+        }}
       />
     </button>
   );
