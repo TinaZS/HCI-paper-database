@@ -20,11 +20,11 @@ export default function Header() {
         <Link to="/" className="text-blue-500 hover:underline font-semibold">
           Home
         </Link>
-        <Link
-          to="/saved"
-          className="text-blue-500 hover:underline font-semibold"
-        >
-          Saved Papers
+        <Link to="/saved" className="text-blue-600 hover:underline">
+          Liked Papers
+        </Link>
+        <Link to="/disliked" className="text-blue-600 hover:underline">
+          Disliked Papers
         </Link>
       </nav>
 

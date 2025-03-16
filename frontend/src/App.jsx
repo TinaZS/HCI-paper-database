@@ -5,7 +5,7 @@ import DisplayResults from "./components/DisplayResults";
 import LoadingBar from "react-top-loading-bar";
 import { defaultArticles, suggestedQueries } from "./constants";
 import Header from "./components/Header";
-import LikedPapers from "./components/LikedPapers";
+import ReactionPapers from "./components/ReactionPapers";
 
 export default function App() {
   const [results, setResults] = useState([]);
@@ -73,7 +73,7 @@ export default function App() {
             element={
               <>
                 <h1 className="text-3xl font-bold text-center mt-10 mb-6 text-gray-800">
-                  HCI Paper Search
+                  Paper Match
                 </h1>
                 <QueryInput onSearch={handleSearch} />
                 <div className="mt-4">
@@ -100,7 +100,15 @@ export default function App() {
           {/* ✅ Liked Papers Page */}
           <Route
             path="/saved"
-            element={<LikedPapers onSearch={handleSearch} />}
+            element={
+              <ReactionPapers reactionType="like" onSearch={handleSearch} />
+            }
+          />
+          <Route
+            path="/disliked"
+            element={
+              <ReactionPapers reactionType="dislike" onSearch={handleSearch} />
+            }
           />
         </Routes>
       </div>
