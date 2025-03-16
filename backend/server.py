@@ -163,31 +163,38 @@ def unlike_paper():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/liked_papers", methods=["GET"])
-def get_liked_papers():
+@app.route("/get_papers_by_reaction", methods=["GET"])
+def get_papers_by_reaction():
     print(f"✅ CORS configured for: {FRONTEND_URL}") 
     try:
         user_id, error_response = extract_user_id_from_token()
         if error_response:
             return error_response  # Return error if token is invalid
 
-        print(f"Fetching liked papers for user: {user_id}")
+        reaction_type = request.args.get("reaction_type", "like")  # Default to "like"
 
-        # ✅ Join `likes` with `new_papers` to get full details
+        print(f"Fetching {reaction_type}d papers for user: {user_id}")
+
+        # Ensure reaction_type is valid
+        if reaction_type not in ["like", "dislike"]:
+            return jsonify({"error": "Invalid reaction_type"}), 400
+
+        # Query Supabase filtering by reaction type
         response = (
             supabase
-            .table("likes")
-            .select("paper_id, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
+            .table("likes")  # This table stores likes and dislikes
+            .select("paper_id, reaction_type, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
             .eq("user_id", user_id)
+            .eq("reaction_type", reaction_type)  # Filter only for like/dislike
             .execute()
         )
 
         if not response or not hasattr(response, "data"):
-            print("Supabase response structure issue:", response)
-            return jsonify({"liked_papers": []}), 200
+            print(f"Supabase response issue for {reaction_type}:", response)
+            return jsonify({"papers": []}), 200
 
-        # ✅ Extract full paper data
-        liked_papers = [
+        # Extract full paper details
+        papers = [
             {
                 "paper_id": row["paper_id"],
                 "title": row["new_papers"]["title"],
@@ -201,13 +208,58 @@ def get_liked_papers():
             for row in response.data
         ]
 
-        print(f"User {user_id} liked papers:", liked_papers)
+        print(f"User {user_id} {reaction_type}d papers:", papers)
 
-        return jsonify({"liked_papers": liked_papers}), 200
+        return jsonify({"papers": papers}), 200
 
     except Exception as e:
-        print("Error fetching liked papers:", str(e))
+        print(f"Error fetching {reaction_type} papers:", str(e))
         return jsonify({"error": str(e)}), 500
+
+@app.route("/react_to_paper", methods=["POST"])
+def react_to_paper():
+    """Unified API for handling likes and dislikes."""
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response  # Invalid token
+
+        data = request.get_json()
+        paper_id = data.get("paper_id")
+        reaction_type = data.get("reaction_type")  # 'like' or 'dislike'
+
+        if not paper_id or reaction_type not in ["like", "dislike"]:
+            return jsonify({"error": "Missing or invalid paper_id/reaction_type"}), 400
+
+        # ✅ Check if user has already reacted
+        existing_reaction = (
+            supabase.table("likes")
+            .select("reaction_type")
+            .match({"user_id": user_id, "paper_id": paper_id})
+            .execute()
+        )
+
+        if existing_reaction.data:
+            existing_type = existing_reaction.data[0]["reaction_type"]
+
+            if existing_type == reaction_type:
+                # ✅ Remove reaction if it's the same (toggle behavior)
+                supabase.table("likes").delete().match({"user_id": user_id, "paper_id": paper_id}).execute()
+                return jsonify({"message": f"Removed {reaction_type} reaction"}), 200
+            else:
+                # ✅ Update reaction if user switches from like <-> dislike
+                supabase.table("likes").update({"reaction_type": reaction_type}).match({"user_id": user_id, "paper_id": paper_id}).execute()
+                return jsonify({"message": f"Updated reaction to {reaction_type}"}), 200
+
+        # ✅ Insert new reaction
+        supabase.table("likes").insert({"user_id": user_id, "paper_id": paper_id, "reaction_type": reaction_type}).execute()
+        return jsonify({"message": f"Paper {reaction_type}d successfully!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
+
+
+
 
 @app.route("/ping", methods=["GET"])
 def ping():

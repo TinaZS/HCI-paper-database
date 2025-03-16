@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import LikeButton from "./LikeButton";
 import categoriesData from "./categories.json"; // Import your JS
+import ReactionButton from "./ReactionButton"; // ✅ Import new reaction button
 
 export default function DisplayResults({ results, onSearch, sortBy}) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
@@ -46,21 +46,18 @@ export default function DisplayResults({ results, onSearch, sortBy}) {
             className="p-4 border rounded-md shadow bg-white relative"
           >
             <h3 className="font-semibold text-lg">{paper.title}</h3>
-
             {/* ✅ Only show score if available */}
             {paper.similarity_score !== undefined && (
               <p className="text-sm italic text-gray-600">
                 Score: {paper.similarity_score}
               </p>
             )}
-
             {/* Check if paper.authors exists and has at least one author */}
             {paper.authors && paper.authors.length > 0 && (
               <p className="text-sm italic text-gray-600">
                 {paper.authors[0]}, et al.
               </p>
             )}
-
             <p className="text-sm italic text-gray-600">
               Published: {formattedDate}
             </p>
@@ -101,7 +98,6 @@ export default function DisplayResults({ results, onSearch, sortBy}) {
                 ))}
               </div>
             )}
-
             {/* Button to trigger search with the paper's embeddngs */}
             <button
               onClick={() => onSearch(paper.embedding, 6, true)}
@@ -109,9 +105,8 @@ export default function DisplayResults({ results, onSearch, sortBy}) {
             >
               Find Similar Papers
             </button>
-
-            {/* Heart Button in Bottom Right */}
-            <LikeButton paperId={paper.paper_id} />
+            {/* Reactoin Button in Bottom Right */}
+            <ReactionButton paperId={paper.paper_id} />
           </div>
         );
       })}
