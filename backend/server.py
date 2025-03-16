@@ -80,6 +80,9 @@ def search():
         query=data.get("query","")
     print("query is ",query)
 
+    topic=data.get("topic")
+    print("TOPIC IS ",topic)
+
     numPapers = data.get("numPapers")
     if not numPapers or not str(numPapers).isdigit():
         numPapers = 6  # Default to 6 if missing or invalid
@@ -95,7 +98,7 @@ def search():
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at user_search start: {start_timestamp}")
 
-    results = user_search(query, index, numPapers,useEmbeddings)
+    results = user_search(query, index, numPapers,useEmbeddings,topic)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"

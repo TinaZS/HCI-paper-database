@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import LikeButton from "./LikeButton";
 import categoriesData from "./categories.json"; // Import your JS
 
-export default function DisplayResults({ results, onSearch }) {
+export default function DisplayResults({ results, onSearch, sortBy}) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
 
   // Flatten the category mapping from categories.json
@@ -11,9 +11,23 @@ export default function DisplayResults({ results, onSearch }) {
     {}
   );
 
+  // ✅ Create a sorted copy of results
+  const sortedResults = [...results].sort((a, b) => {
+    if (sortBy === "score") {
+      // Sort by score (descending)
+      return (b.similarity_score || 0) - (a.similarity_score || 0);
+    } else if (sortBy === "date") {
+      // Sort by date (descending)
+      const dateA = new Date(a.datePublished).getTime() || 0;
+      const dateB = new Date(b.datePublished).getTime() || 0;
+      return dateB - dateA;
+    }
+    return 0;
+  });
+
   return (
     <div className="mt-4 w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {results.map((paper) => {
+      {sortedResults.map((paper) => {
         let formattedDate = "Unknown";
         if (paper.datePublished && paper.datePublished !== "Unknown") {
           const dateObject = new Date(paper.datePublished);

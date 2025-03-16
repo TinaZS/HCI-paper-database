@@ -41,7 +41,7 @@ def get_openai_embedding(text):
 
     return embedding.reshape(1, -1)  
 
-def search(query, index, k=6, embedState=False):
+def search(query, index, k=6, embedState=False,topic=""):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
 
     first_time=time.time()
@@ -58,55 +58,62 @@ def search(query, index, k=6, embedState=False):
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
     print(f"Timestamp at middle of inner search function: {embedding_timestamp}")
 
-    distances, indices = index.search(query_embedding, k)
+    results = []
+    attempt_size = 5 * k if topic else k
+    max_attempts = 5  # Limit retries to prevent infinite loops
+    attempt_count = 0
 
-    scores_dict = {}
-    print(distances)
-    print(indices)
-    for i in range(0,len(distances[0])):
-        scores_dict[indices[0][i]]=distances[0][i]
-    print(scores_dict)
+    while len(results) < k and attempt_count < max_attempts:
+        # Step 2: Search FAISS with larger search pool if needed
+        distances, indices = index.search(query_embedding, attempt_size)
+        
+        if indices[0][0] == -1:
+            print("No matching papers found.")
+            return []
+        
+        faiss_ids = [int(idx) for idx in indices[0] if idx != -1]  # Remove -1 results
 
-    postquery_time=time.time()
-    postquery_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postquery_time)) + f".{int((postquery_time % 1) * 1000):03d}"
-    print(f"Timestamp at middle of inner search function: {postquery_timestamp}")
+        # Step 3: Fetch metadata from Supabase
+        response = supabase.table("new_papers") \
+            .select("faiss_id", "paper_id", "title", "authors", "abstract", "link", "published_date", "categories", "embedding") \
+            .in_("faiss_id", faiss_ids) \
+            .execute()
+        
+        if not response.data:
+            break
 
-    if indices[0][0] == -1:  # FAISS returns -1 if no results
-        print("No matching papers found.")
-        return []
+        # Step 4: Filter based on topic AFTER fetching from Supabase
+        filtered_results = []
+        scores_dict = {indices[0][i]: distances[0][i] for i in range(len(distances[0]))}
 
-        # Extract FAISS indices as a list
-    faiss_ids = [int(idx) for idx in indices[0]]  # Ensure IDs are in list format
-
-    # Perform a single batch query to Supabase
-    response = supabase.table("new_papers") \
-        .select("faiss_id", "paper_id", "title", "authors", "abstract", "link", "published_date","categories","embedding") \
-        .in_("faiss_id", faiss_ids) \
-        .execute()
-
-    
-    # Process the response and add similarity scores
-    if response.data:
         for paper in response.data:
             faiss_id = paper["faiss_id"]
             if faiss_id in scores_dict:
-                paper["similarity_score"] = float(scores_dict[faiss_id])  # Add similarity score
+                paper["similarity_score"] = float(scores_dict[faiss_id])
 
-        # Remove FAISS IDs from response
-        for paper in response.data:
+            if topic:
+                # Check if topic is part of the categories list
+                if topic in paper.get("categories", []):
+                    filtered_results.append(paper)
+
+            else:
+                filtered_results.append(paper)
+
+            # Remove FAISS IDs from response
             del paper["faiss_id"]
 
-    #print(response)
-    
-    
-    
-    postsupabase_time=time.time()
-    postsupabase_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(postsupabase_time)) + f".{int((postsupabase_time % 1) * 1000):03d}"
-    print(f"Timestamp at end of inner search function: {postsupabase_timestamp}")
+        # Step 5: Merge filtered results and check if enough are found
+        results.extend(filtered_results)
 
-    # Extract results (handle empty responses)
-    results = response.data if response.data else []
-    #print(results)
+        # If we have enough valid results, stop searching
+        if len(results) >= k:
+            break
+
+        # Step 6: If not enough results, increase the search pool and retry
+        attempt_size *= 2
+        attempt_count += 1
+        print("Attempt size is ",attempt_size)
+        print("Attempt count is ",attempt_count)
     
 
     # Sorting the results by similarity_score in descending order
