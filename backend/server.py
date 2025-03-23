@@ -83,6 +83,26 @@ def search():
     topic=data.get("topic")
     print("TOPIC IS ",topic)
 
+
+    auth_header = request.headers.get('Authorization')
+
+    if not auth_header:
+        return jsonify({"authenticated": False, "error": "Authorization token required"}), 401
+
+    try:
+        # Extract token from the 'Bearer <token>' format
+        token = auth_header.split(" ")[1]
+
+        # Get the user from Supabase using the token
+        user = supabase.auth.get_user(token)
+
+        user_id=user.user.id
+        print("User ID is ",user_id)
+
+    except Exception as e:
+        return jsonify({"authenticated": False, "error": str(e)}), 500
+
+
     numPapers = data.get("numPapers")
     if not numPapers or not str(numPapers).isdigit():
         numPapers = 6  # Default to 6 if missing or invalid
@@ -98,7 +118,9 @@ def search():
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at user_search start: {start_timestamp}")
 
-    results = user_search(query, index, numPapers,useEmbeddings,topic)
+    
+    #add user id as an input
+    results = user_search(query, index, numPapers,useEmbeddings,topic,user_id)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"

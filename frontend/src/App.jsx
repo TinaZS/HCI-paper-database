@@ -7,6 +7,7 @@ import { defaultArticles, suggestedQueries } from "./constants";
 import Header from "./components/Header";
 import categoriesData from "./components/categories.json"
 import ReactionPapers from "./components/ReactionPapers";
+import { useAuth } from "./AuthContext";
 
 export default function App() {
   const [results, setResults] = useState([]);
@@ -15,6 +16,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const loadingBarRef = useRef(null);
   const [sortBy, setSortBy] = useState("score"); // Default to sorting by score
+  const { token } = useAuth(); // ✅ Get the token from context
   
   // Handle dropdown change
   const handleDropdownChange = (event) => {
@@ -27,6 +29,7 @@ export default function App() {
   }, []);
 
   async function handleSearch(query, numPapers = 6, useEmbeddings = false, searchTopic="") {
+    if (!token) return;
     try {
       let trimmedQuery = query; // Initialize trimmedQuery with the original query
 
@@ -49,10 +52,15 @@ export default function App() {
       console.log(trimmedQuery);
       console.log(searchTopic);
 
+      console.log(token);
+
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
       const response = await fetch(`${API_BASE_URL}/search`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         mode: "cors",
         cache: "no-store",
         body: JSON.stringify({

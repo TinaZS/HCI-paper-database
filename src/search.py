@@ -5,6 +5,9 @@ import time
 import openai
 import os
 from dotenv import load_dotenv
+import sys
+
+from src.construct_profile import construct_user_profile
 
 load_dotenv()
 
@@ -41,18 +44,58 @@ def get_openai_embedding(text):
 
     return embedding.reshape(1, -1)  
 
-def search(query, index, k=6, embedState=False,topic=""):
+#add user id as an input to search
+def search(query, index, k=6, embedState=False,topic="",user_id=""):
     """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
-
+    
     first_time=time.time()
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
     print(f"Timestamp at start of inner search function: {first_timestamp}")
+
+    # Query Supabase filtering by reaction type
+    response = (
+        supabase
+        .table("likes")  # This table stores likes and dislikes
+        .select("paper_id, reaction_type,created_at, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
+        .eq("user_id", user_id)
+        .eq("reaction_type", "like")  # Filter only for like/dislike
+        .execute()
+    )
+
+    if not response or not hasattr(response, "data"):
+        print(f"Supabase response issue for {reaction_type}:", response)
+        return jsonify({"papers": []}), 200
+
+    # Extract full paper details
+    papers = [
+        {
+            "paper_id": row["paper_id"],
+            "created_at": row["created_at"],
+            "embedding": row["new_papers"]["embedding"]
+        }
+        for row in response.data
+    ]
+
+    #print(f"User {user_id} {reaction_type}d papers:", papers)
+
+    print(papers[0])
+
+    user_profile_embeddings=construct_user_profile(papers)
+
 
     if embedState==False:
         query_embedding = get_openai_embedding(query)
     else:
         query_embedding = np.array(query).reshape(1,-1)
         print(query_embedding.shape)
+
+
+    query_factor=0.9
+    historical_factor=0.1
+
+    query_embedding=query_factor*query_embedding+historical_factor*user_profile_embeddings
+
+    #return None
 
     embedding_time=time.time()
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
