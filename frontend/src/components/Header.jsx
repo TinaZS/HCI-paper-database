@@ -14,18 +14,17 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full flex justify-between items-center p-4 bg-gray-100 relative">
-      {/* ✅ Left-side navigation links */}
-      <nav className="flex gap-6">
-        <Link to="/" className="text-blue-500 hover:underline font-semibold">
+    <header className="w-full py-4 px-6 flex justify-between items-center">
+      <nav className="flex space-x-6 text-lg font-serif">
+        <a href="/" className="text-[#EDE0D4] hover:underline">
           Home
-        </Link>
-        <Link to="/saved" className="text-blue-600 hover:underline">
+        </a>
+        <a href="/saved" className="text-[#EDE0D4] hover:underline">
           Liked Papers
-        </Link>
-        <Link to="/disliked" className="text-blue-600 hover:underline">
-          Disliked Papers
-        </Link>
+        </a>
+        <a href="/disliked" className="text-[#EDE0D4] hover:underline">
+          Hidden Papers
+        </a>
       </nav>
 
       {/* ✅ Right-side user authentication */}

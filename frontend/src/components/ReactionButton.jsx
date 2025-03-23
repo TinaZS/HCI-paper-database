@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { HeartIcon, HandThumbDownIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "../AuthContext";
 
-export default function ReactionButton({ paperId }) {
+export default function ReactionButton({ paperId, onReactionChange }) {
   const [reaction, setReaction] = useState(null); // 'like' or 'dislike'
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -81,7 +81,9 @@ export default function ReactionButton({ paperId }) {
       });
 
       if (response.ok) {
-        setReaction((prev) => (prev === reactionType ? null : reactionType)); // Toggle state
+        const updated = reaction === reactionType ? null : reactionType;
+        setReaction(updated);
+        if (onReactionChange) onReactionChange(updated); // ✅ Notify parent
       }
     } catch (error) {
       console.error("Error updating reaction:", error);
