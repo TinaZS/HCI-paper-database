@@ -134,6 +134,38 @@ export default function App() {
 
   };
 
+  useEffect(() => {
+    if (token) {
+      fetchUserSessions();
+    }
+  }, [token]);
+
+  const fetchUserSessions = async () => {
+    if (!user?.id) return;
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await fetch(`${API_BASE_URL}/get-user-sessions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch user sessions");
+      }
+
+      const data = await response.json();
+      setSessions(data.sessions);
+      setActiveSession(data.sessions[0] || "");
+    } catch (error) {
+      console.error("Error fetching user sessions:", error);
+    }
+  };
+
   // Rename a session
 const renameSession = (oldName) => {
 

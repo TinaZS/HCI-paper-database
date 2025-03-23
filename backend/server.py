@@ -339,6 +339,34 @@ def delete_session():
 
     except Exception as e:
         return jsonify({"error": "Something went wrong", "details": str(e)}), 500  # Return error with message and details
+
+
+@app.route("/get-user-sessions", methods=["POST"])
+def get_user_sessions():
+    print(f"✅ CORS configured for: {FRONTEND_URL}") 
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response  # Return error if token is invalid
+
+        response = supabase.table("user_sessions").select("*").eq("user_id", user_id).execute()
+
+        # Extract list of dictionaries
+        sessions = response.data if hasattr(response, "data") else []
+
+        print("✅ Fetched Sessions:", sessions)
+
+        # Sort by 'created_at' (oldest first)
+        sorted_sessions = sorted(sessions, key=lambda x: x["created_at"])
+
+        # Extract session names
+        session_names = [session["session_name"] for session in sorted_sessions]
+
+        return jsonify({"sessions": session_names})
+
+    except Exception as e:
+        print(f"Error fetching user sessions:", str(e))
+        return jsonify({"error": str(e)}), 500
     
 
 
