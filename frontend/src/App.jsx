@@ -5,8 +5,10 @@ import DisplayResults from "./components/DisplayResults";
 import LoadingBar from "react-top-loading-bar";
 import { defaultArticles, suggestedQueries } from "./constants";
 import Header from "./components/Header";
-import categoriesData from "./components/categories.json"
+import categoriesData from "./components/categories.json";
 import ReactionPapers from "./components/ReactionPapers";
+import { useAuth } from "./AuthContext";
+import { supabase } from "./supabaseClient";
 
 export default function App() {
   const [results, setResults] = useState([]);
@@ -15,18 +17,84 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const loadingBarRef = useRef(null);
   const [sortBy, setSortBy] = useState("score"); // Default to sorting by score
-  
+  const { user } = useAuth();
+  const [dislikedPaperIds, setDislikedPaperIds] = useState([]);
+  const [filteredResults, setFilteredResults] = useState([]);
+
   // Handle dropdown change
-  const handleDropdownChange = (event) => {
-    setSelectedCategory(event.target.value); // Update state with selected option
+  const handleReactionChange = (paperId, newReaction) => {
+    const isHome = pageType === "home";
+    const isSaved = pageType === "saved";
+    const isDisliked = pageType === "disliked";
+
+    const isReactionRemoved =
+      (isSaved && newReaction !== "like") ||
+      (isDisliked && newReaction !== "dislike");
+
+    if (isHome && newReaction === "dislike") {
+      setVisibleResults((prev) => {
+        const updated = prev.filter((paper) => paper.paper_id !== paperId);
+        setTimeout(() => {
+          if (updated.length < 6 && refillResults) {
+            const firstRemaining = updated[0];
+            if (firstRemaining?.embedding) {
+              refillResults(firstRemaining.embedding, 12, true);
+            }
+          }
+        }, 400);
+        return updated;
+      });
+      return;
+    }
+
+    if (isReactionRemoved) {
+      setVisibleResults((prev) =>
+        prev.filter((paper) => paper.paper_id !== paperId)
+      );
+
+      // ✅ Delay re-fetch for animation
+      setTimeout(() => {
+        if (onReactionChange) onReactionChange();
+      }, 350); // match `framer-motion` exit
+      return;
+    }
   };
+
+  useEffect(() => {
+    async function fetchDisliked() {
+      if (user) {
+        const { data, error } = await supabase
+          .from("likes") // ✅ correct table name
+          .select("paper_id")
+          .eq("reaction_type", "dislike") // ✅ correct column
+          .eq("user_id", user.id);
+
+        if (!error && data) {
+          const ids = data.map((row) => row.paper_id);
+          console.log("✅ Fetched dislikedPaperIds:", ids);
+          setDislikedPaperIds(ids);
+        } else {
+          console.error("❌ Supabase query failed:", { error, user });
+        }
+      } else {
+        setDislikedPaperIds([]);
+      }
+    }
+
+    fetchDisliked();
+  }, [user]);
 
   useEffect(() => {
     console.log("Loaded categories:", categoriesData);
     setCategories(categoriesData);
   }, []);
 
-  async function handleSearch(query, numPapers = 6, useEmbeddings = false, searchTopic="") {
+  async function handleSearch(
+    query,
+    numPapers = 6,
+    useEmbeddings = false,
+    searchTopic = ""
+  ) {
     try {
       let trimmedQuery = query; // Initialize trimmedQuery with the original query
 
@@ -68,8 +136,24 @@ export default function App() {
       }
 
       const data = await response.json();
-      console.log("Received Data:", data);
-      setResults(data.results);
+      let allResults = data.results;
+
+      // Remove disliked papers if signed in
+      if (user && dislikedPaperIds.length > 0) {
+        allResults = allResults.filter(
+          (paper) => !dislikedPaperIds.includes(paper.paper_id)
+        );
+      }
+
+      // Retry if too few remain
+      if (allResults.length < 6) {
+        console.log("Refetching: too few visible papers...");
+        return handleSearch(query, numPapers * 2, useEmbeddings, searchTopic);
+      }
+
+      // ✅ Safe to show
+      setResults(allResults); // ✅ keep full pool
+      setFilteredResults(allResults.slice(0, 6)); // only show 6
     } catch (error) {
       console.error("Error fetching results:", error);
     } finally {
@@ -78,7 +162,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#D5C7AC] via-[#53545D] to-[#00234B] flex flex-col items-center px-4">
       <LoadingBar ref={loadingBarRef} color="#60A5FA" height={10} />
       <Header />
 
@@ -89,10 +173,14 @@ export default function App() {
             path="/"
             element={
               <>
-                <h1 className="text-3xl font-bold text-center mt-10 mb-6 text-gray-800">
-                  Paper Match
+                <h1
+                  className="text-6xl font-bold text-center mt-16 mb-12 tracking-wide"
+                  style={{ fontFamily: "Gloock", color: "#D5C7AC" }}
+                >
+                  PaperMatch
                 </h1>
-                <QueryInput 
+
+                <QueryInput
                   onSearch={handleSearch}
                   categories={categories}
                   selectedCategory={selectedCategory}
@@ -100,10 +188,15 @@ export default function App() {
                   onCategoryChange={setSelectedCategory}
                   onQueryChange={setSelectedQuery}
                 />
-                <div className="mt-4">
-                  <label className="block text-lg font-semibold mb-2">Sort by:</label>
+                {/* 🔹 Sort By Section */}
+                <div className="mt-6">
+                  <label className="block text-lg font-serif font-semibold text-[#3E3232] mb-2">
+                    Sort by:
+                  </label>
                   <select
-                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-[#8E7965] bg-[#F5EDE3] text-[#3E3232] 
+               rounded-md focus:ring-2 focus:ring-[#6D4C41] outline-none 
+               transition duration-150"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -111,15 +204,18 @@ export default function App() {
                     <option value="date">Date (newest first)</option>
                   </select>
                 </div>
-                <div className="mt-4">
-                  <h2 className="text-xl font-semibold mb-2">
+
+                {/* 🔹 Suggested Searches Section */}
+                <div className="mt-6">
+                  <h2 className="text-lg font-serif font-semibold text-[#3E3232] mb-3">
                     Suggested Searches: {selectedQuery}
                   </h2>
                   <div className="flex gap-2 flex-wrap">
                     {suggestedQueries.map((query, index) => (
                       <button
                         key={index}
-                        className="px-3 py-1 bg-blue-200 text-blue-700 rounded-md hover:bg-blue-300"
+                        className="px-4 py-2 bg-[#B8A290] text-[#3E3232] rounded-md font-serif 
+                   hover:bg-[#8E7965] hover:text-[#F5EDE3] transition duration-150"
                         onClick={() => handleSearch(query)}
                       >
                         {query}
@@ -127,7 +223,14 @@ export default function App() {
                     ))}
                   </div>
                 </div>
-                <DisplayResults results={results} onSearch={handleSearch} sortBy={sortBy} />
+
+                <DisplayResults
+                  results={results}
+                  onSearch={handleSearch}
+                  sortBy={sortBy}
+                  dislikedPaperIds={dislikedPaperIds}
+                  refillResults={handleSearch}
+                />
               </>
             }
           />

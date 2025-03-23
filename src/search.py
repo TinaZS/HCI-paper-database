@@ -59,7 +59,7 @@ def search(query, index, k=6, embedState=False,topic=""):
     print(f"Timestamp at middle of inner search function: {embedding_timestamp}")
 
     results = []
-    attempt_size = 5 * k if topic else k
+    attempt_size = 5 * k  # Always over-fetch, topic or not
     max_attempts = 5  # Limit retries to prevent infinite loops
     attempt_count = 0
 
