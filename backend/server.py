@@ -201,6 +201,8 @@ def get_papers_by_reaction():
         if reaction_type not in ["like", "dislike"]:
             return jsonify({"error": "Invalid reaction_type"}), 400
 
+        #r1= (supabase.table("user_session").eq("user_id",user_id).eq("session_name",session_name).execute())
+
         # Query Supabase filtering by reaction type
         response = (
             supabase
@@ -281,6 +283,63 @@ def react_to_paper():
         return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 
+@app.route("/create-session", methods=["POST"])
+def create_session():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    session_name=data.get("session_name")
+    
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400  # Return a JSON error response
+
+    try:
+        # Insert session into the user_sessions table
+        response = supabase.table("user_sessions").insert([
+            {"user_id": user_id,"session_name": session_name, "created_at": "now()"}
+        ]).execute()
+
+        print(f"Supabase Response: {response}")  # Log the response to inspect it
+        print("cool")
+
+        if not response.data:  # Check if there's an error in the response
+            return jsonify({"error": f"Failed to create session: {response.error}"}), 500
+        
+        return jsonify({"message": "Session created successfully", "data": response.data}), 201
+
+    except Exception as e:
+        # Log the exception details
+        #print(f"Error: {str(e)}")  # Log the error for debugging
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500  # Return error with message and details
+
+
+@app.route("/delete-session", methods=["DELETE"])
+def delete_session():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    session_name = data.get("session_name")
+    print(user_id)
+    print(session_name)
+    
+    if not user_id or not session_name:
+        return jsonify({"error": "User ID and session name are required"}), 400  # Return a JSON error response if either is missing
+
+    try:
+        # Delete the session from the user_sessions table using user_id and session_name
+        response = supabase.table("user_sessions").delete().match({
+            "user_id": user_id,
+            "session_name": session_name
+        }).execute()
+
+        print(f"Supabase Response: {response}")  # Log the response to inspect it
+
+        if not response.data:  # Check if no data was returned, meaning no session was deleted
+            return jsonify({"error": "Session not found or failed to delete"}), 404
+        
+        return jsonify({"message": "Session deleted successfully", "data": response.data}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500  # Return error with message and details
+    
 
 
 @app.route("/ping", methods=["GET"])
