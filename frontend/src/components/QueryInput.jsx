@@ -6,7 +6,7 @@ export default function QueryInput({
   selectedCategory,
   selectedQuery,
   onCategoryChange,
-  onQueryChange
+  onQueryChange,
 }) {
   const [query, setQuery] = useState("");
   const [numPapers, setNumPapers] = useState("6");
@@ -20,88 +20,88 @@ export default function QueryInput({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="w-full max-w-4xl mx-auto flex flex-col gap-3"
-    >
-      {/* ✅ Search Query */}
-      <div className="flex gap-3">
+    <>
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-3xl mx-auto flex gap-3 relative"
+      >
         <input
           type="text"
-          placeholder="Enter your search query here..."
+          placeholder="Enter your search query..."
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full p-4 border border-[#8B6C42] bg-[#E6DAC6] text-[#2D2C2A] placeholder-[#5C4033] rounded-full shadow-md focus:ring-2 focus:ring-[#4A2C2A] outline-none"
         />
-        <input
-          type="number"
-          placeholder="# papers to return..."
-          value={numPapers}
-          onChange={(event) => setNumPapers(event.target.value)}
-          className="w-45 p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-        />
+        {/* Clear Button */}
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-black"
+          >
+            ✕
+          </button>
+        )}
         <button
           type="submit"
-          className="px-5 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition"
+          className="px-6 py-3 bg-[#5C4033] text-[#E6DAC6] border border-[#4A2C2A] rounded-full hover:bg-[#4A2C2A] transition duration-200 font-serif"
         >
           Search
         </button>
-      </div>
-
-      {/* ✅ Category Dropdown */}
-      <div className="mt-4">
-        <label className="block text-lg font-semibold mb-2">
-          Select Category:
-        </label>
-        <select
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
-          value={selectedCategory}
-          onChange={(e) => {
-            const category = e.target.value;
-            console.log("Selected Category:", category);
-            onCategoryChange(category); // ✅ Update state in parent (App.jsx)
-            onQueryChange(""); // ✅ Reset topic when category changes
-          }}
-        >
-          <option value="" disabled>
-            Choose a category...
-          </option>
-          {Object.keys(categories).map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* ✅ Topic Dropdown (Only appears when category is selected) */}
-      {selectedCategory && (
-        <div className="mt-4">
-          <label className="block text-lg font-semibold mb-2">
-            Select Topic:
+      </form>
+      <div className="flex gap-3 mt-4">
+        <div className="flex-1">
+          <label className="block text-lg font-semibold text-[#E6DAC6] mb-2">
+            Select Category:
           </label>
           <select
-            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
-            value={selectedQuery}
+            className="w-full p-3 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+            value={selectedCategory}
             onChange={(e) => {
-              const topic = e.target.value;
-              console.log("Selected Topic:", topic);
-              onQueryChange(topic); // ✅ Update state in parent (App.jsx)
+              onCategoryChange(e.target.value);
+              onQueryChange("");
             }}
           >
-            <option value="" disabled>
-              Choose a topic...
+            <option value="" disabled className="text-[#5C4033]">
+              Choose a category...
             </option>
-            {Object.entries(categories[selectedCategory]).map(
-              ([key, value]) => (
-                <option key={key} value={key}>
-                  {`${key} - ${value}`}
-                </option>
-              )
-            )}
+            {Object.keys(categories).map((category) => (
+              <option
+                key={category}
+                value={category}
+                className="text-[#4A2C2A]"
+              >
+                {category}
+              </option>
+            ))}
           </select>
         </div>
-      )}
-    </form>
+
+        {/* Select Topic */}
+        {selectedCategory && (
+          <div className="flex-1">
+            <label className="block text-lg font-semibold text-[#E6DAC6] mb-2">
+              Select Topic:
+            </label>
+            <select
+              className="w-full p-3 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+              value={selectedQuery}
+              onChange={(e) => onQueryChange(e.target.value)}
+            >
+              <option value="" disabled className="text-[#5C4033]">
+                Choose a topic...
+              </option>
+              {Object.entries(categories[selectedCategory]).map(
+                ([key, value]) => (
+                  <option key={key} value={key} className="text-[#4A2C2A]">
+                    {`${key} - ${value}`}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
