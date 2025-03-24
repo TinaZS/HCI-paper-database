@@ -100,9 +100,8 @@ export default function ReactionPapers({ reactionType, onSearch, session_name })
           results={filteredPapers}
           onSearch={(embedding) => {
             onSearch(embedding, 6, true);
-            navigate("/");
+            navigate("/");}}
           session_name={session_name}
-          }}
         />
       )}
     </div>
