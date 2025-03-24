@@ -61,39 +61,50 @@ def search(query, index, k=6, embedState=False,topic="",user_id=""):
         .eq("reaction_type", "like")  # Filter only for like/dislike
         .execute()
     )
+    
 
-    if not response or not hasattr(response, "data"):
-        print(f"Supabase response issue for {reaction_type}:", response)
-        return jsonify({"papers": []}), 200
+    #if not response or not hasattr(response, "data"):
+        #print(f"Supabase response issue for {reaction_type}:", response)
+        #return jsonify({"papers": []}), 200
+    
+    if response.data is None:
 
-    # Extract full paper details
-    papers = [
-        {
-            "paper_id": row["paper_id"],
-            "created_at": row["created_at"],
-            "embedding": row["new_papers"]["embedding"]
-        }
-        for row in response.data
-    ]
+        # Extract full paper details
+        papers = [
+            {
+                "paper_id": row["paper_id"],
+                "created_at": row["created_at"],
+                "embedding": row["new_papers"]["embedding"]
+            }
+            for row in response.data
+        ]
 
-    #print(f"User {user_id} {reaction_type}d papers:", papers)
+        #print(f"User {user_id} {reaction_type}d papers:", papers)
 
-    print(papers[0])
+        print(papers[0])
 
-    user_profile_embeddings=construct_user_profile(papers)
+        user_profile_embeddings=construct_user_profile(papers)
 
 
-    if embedState==False:
-        query_embedding = get_openai_embedding(query)
+        if embedState==False:
+            query_embedding = get_openai_embedding(query)
+        else:
+            query_embedding = np.array(query).reshape(1,-1)
+            print(query_embedding.shape)
+
+
+        query_factor=0.9
+        historical_factor=0.1
+
+        query_embedding=query_factor*query_embedding+historical_factor*user_profile_embeddings
+    
     else:
-        query_embedding = np.array(query).reshape(1,-1)
-        print(query_embedding.shape)
 
-
-    query_factor=0.9
-    historical_factor=0.1
-
-    query_embedding=query_factor*query_embedding+historical_factor*user_profile_embeddings
+        if embedState==False:
+            query_embedding = get_openai_embedding(query)
+        else:
+            query_embedding = np.array(query).reshape(1,-1)
+            print(query_embedding.shape)
 
     #return None
 

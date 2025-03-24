@@ -70,6 +70,10 @@ export default function App() {
   };
 
   useEffect(() => {
+    console.log('activeSession changed:', activeSession);
+  }, [activeSession]);
+
+  useEffect(() => {
     async function fetchDisliked() {
       if (user) {
         const { data, error } = await supabase
@@ -220,6 +224,8 @@ export default function App() {
       const data = await response.json();
       setSessions(data.sessions);
       setActiveSession(data.sessions[0] || "");
+      console.log("DATA SESSEIONS ARE ",data.sessions);
+      console.log("ACTIVE SESSION IS ",data.sessions[0] || "")
     } catch (error) {
       console.error("Error fetching user sessions:", error);
     }
@@ -500,13 +506,13 @@ export default function App() {
                       ))}
                     </div>
                   </div>
-
                   <DisplayResults
                     results={results}
                     onSearch={handleSearch}
                     sortBy={sortBy}
                     dislikedPaperIds={dislikedPaperIds}
                     refillResults={handleSearch}
+                    session_name={activeSession}
                   />
                 </>
               }
@@ -516,7 +522,7 @@ export default function App() {
             <Route
               path="/saved"
               element={
-                <ReactionPapers reactionType="like" onSearch={handleSearch} />
+                <ReactionPapers reactionType="like" onSearch={handleSearch} session_name={activeSession} />
               }
             />
             <Route

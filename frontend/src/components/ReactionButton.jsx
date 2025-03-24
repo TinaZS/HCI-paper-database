@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { HeartIcon, HandThumbDownIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "../AuthContext";
 
-export default function ReactionButton({ paperId, onReactionChange }) {
+export default function ReactionButton({ paperId, onReactionChange, current_session }) {
   const [reaction, setReaction] = useState(null); // 'like' or 'dislike'
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -18,7 +18,8 @@ export default function ReactionButton({ paperId, onReactionChange }) {
             method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"//,
+             // "X-Session-Name": current_session, // Custom header to send session information
             },
           }
         );
@@ -41,7 +42,8 @@ export default function ReactionButton({ paperId, onReactionChange }) {
             method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"//,
+              //"X-Session-Name": current_session, // Custom header to send session information
             },
           }
         );
@@ -64,7 +66,7 @@ export default function ReactionButton({ paperId, onReactionChange }) {
     fetchReaction();
   }, [paperId, token]);
 
-  const handleReaction = async (reactionType) => {
+  const handleReaction = async (reactionType, session) => {
     if (!token) return;
 
     try {
@@ -77,6 +79,7 @@ export default function ReactionButton({ paperId, onReactionChange }) {
         body: JSON.stringify({
           paper_id: paperId,
           reaction_type: reactionType,
+          user_session: session,
         }),
       });
 
@@ -93,7 +96,7 @@ export default function ReactionButton({ paperId, onReactionChange }) {
   return (
     <div className="flex gap-3 items-center absolute bottom-2 right-2">
       <button
-        onClick={() => handleReaction("like")}
+        onClick={() => handleReaction("like", current_session)}
         className="focus:outline-none"
       >
         <HeartIcon
@@ -103,7 +106,7 @@ export default function ReactionButton({ paperId, onReactionChange }) {
         />
       </button>
       <button
-        onClick={() => handleReaction("dislike")}
+        onClick={() => handleReaction("dislike", current_session)}
         className="focus:outline-none"
       >
         <HandThumbDownIcon

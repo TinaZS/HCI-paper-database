@@ -194,6 +194,7 @@ def get_papers_by_reaction():
             return error_response  # Return error if token is invalid
 
         reaction_type = request.args.get("reaction_type", "like")  # Default to "like"
+        #session_name = request.headers.get('X-Session-Name')  # Use the correct header namez
 
         print(f"Fetching {reaction_type}d papers for user: {user_id}")
 
@@ -210,6 +211,7 @@ def get_papers_by_reaction():
             .select("paper_id, reaction_type, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
             .eq("user_id", user_id)
             .eq("reaction_type", reaction_type)  # Filter only for like/dislike
+            #.eq("session_name", session_name)
             .execute()
         )
 
@@ -251,6 +253,7 @@ def react_to_paper():
         data = request.get_json()
         paper_id = data.get("paper_id")
         reaction_type = data.get("reaction_type")  # 'like' or 'dislike'
+        session_name=data.get("user_session")
 
         if not paper_id or reaction_type not in ["like", "dislike"]:
             return jsonify({"error": "Missing or invalid paper_id/reaction_type"}), 400
@@ -259,7 +262,7 @@ def react_to_paper():
         existing_reaction = (
             supabase.table("likes")
             .select("reaction_type")
-            .match({"user_id": user_id, "paper_id": paper_id})
+            .match({"user_id": user_id, "paper_id": paper_id,"session_name":session_name})
             .execute()
         )
 
@@ -268,15 +271,17 @@ def react_to_paper():
 
             if existing_type == reaction_type:
                 # ✅ Remove reaction if it's the same (toggle behavior)
-                supabase.table("likes").delete().match({"user_id": user_id, "paper_id": paper_id}).execute()
+                supabase.table("likes").delete().match({"user_id": user_id, "paper_id": paper_id,"session_name":session_name}).execute()
                 return jsonify({"message": f"Removed {reaction_type} reaction"}), 200
             else:
                 # ✅ Update reaction if user switches from like <-> dislike
-                supabase.table("likes").update({"reaction_type": reaction_type}).match({"user_id": user_id, "paper_id": paper_id}).execute()
+                supabase.table("likes").update({"reaction_type": reaction_type}).match({"user_id": user_id, "paper_id": paper_id,"session_name":session_name}).execute()
                 return jsonify({"message": f"Updated reaction to {reaction_type}"}), 200
 
+        print("SESSION NAME IS ",session_name)
+
         # ✅ Insert new reaction
-        supabase.table("likes").insert({"user_id": user_id, "paper_id": paper_id, "reaction_type": reaction_type}).execute()
+        supabase.table("likes").insert({"user_id": user_id, "paper_id": paper_id, "reaction_type": reaction_type,"session_name":session_name}).execute()
         return jsonify({"message": f"Paper {reaction_type}d successfully!"}), 200
 
     except Exception as e:

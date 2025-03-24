@@ -10,11 +10,16 @@ export default function DisplayResults({
   sortBy,
   dislikedPaperIds = [],
   refillResults,
+  session_name,
 }) {
+
+  //console.log("USER SESSION In display results is ",session_name)
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [selectedPaper, setSelectedPaper] = useState(null);
   const { user } = useAuth();
   const [visibleResults, setVisibleResults] = useState([]);
+    
+
 
   useEffect(() => {
     let filtered = [...results];
@@ -142,8 +147,8 @@ export default function DisplayResults({
                 <ReactionButton
                   paperId={paper.paper_id}
                   onReactionChange={(newReaction) =>
-                    handleReactionChange(paper.paper_id, newReaction)
-                  }
+                    handleReactionChange(paper.paper_id, newReaction)}
+                  current_session={session_name}
                 />
               </div>
             </motion.div>
