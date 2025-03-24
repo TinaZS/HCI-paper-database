@@ -6,6 +6,7 @@ export default function StaticResults({ results, onSearch }) {
     console.warn("⚠️ StaticResults expected an array but got:", results);
     return null;
   }
+  const dog="dog";
 
   return (
     <div className="mt-6 w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -75,7 +76,7 @@ export default function StaticResults({ results, onSearch }) {
               </button>
             )}
 
-            <ReactionButton paperId={paper.paper_id} />
+            <ReactionButton paperId={paper.paper_id} session_name={dog} />
           </div>
         );
       })}

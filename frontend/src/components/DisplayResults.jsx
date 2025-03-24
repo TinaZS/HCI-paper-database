@@ -13,13 +13,12 @@ export default function DisplayResults({
   session_name,
 }) {
 
-  //console.log("USER SESSION In display results is ",session_name)
+  console.log("USER SESSION In display results is ",session_name)
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [selectedPaper, setSelectedPaper] = useState(null);
   const { user } = useAuth();
   const [visibleResults, setVisibleResults] = useState([]);
-    
-
+  const currentSessionName = session_name;
 
   useEffect(() => {
     let filtered = [...results];
@@ -143,13 +142,13 @@ export default function DisplayResults({
                 >
                   Find Similar Papers
                 </button>
-
-                <ReactionButton
-                  paperId={paper.paper_id}
-                  onReactionChange={(newReaction) =>
-                    handleReactionChange(paper.paper_id, newReaction)}
-                  current_session={session_name}
-                />
+                <div>toast{currentSessionName}toast</div> {/* This will render session_name */}
+              <ReactionButton
+                paperId={paper.paper_id}
+                onReactionChange={(newReaction) =>
+                  handleReactionChange(paper.paper_id, newReaction)}
+                session_name={session_name}
+              />
               </div>
             </motion.div>
           );

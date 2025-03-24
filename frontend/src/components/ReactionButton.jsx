@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { HeartIcon, HandThumbDownIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "../AuthContext";
 
-export default function ReactionButton({ paperId, onReactionChange, current_session }) {
+export default function ReactionButton({ paperId, onReactionChange, session_name }) {
   const [reaction, setReaction] = useState(null); // 'like' or 'dislike'
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+  console.log("User session inside reaction button is ",session_name)
 
   useEffect(() => {
-    if (!token) return;
+    
+   //if (!token || !current_session) return; // Make sure current_session is available
 
     async function fetchReaction() {
       try {
@@ -18,8 +20,8 @@ export default function ReactionButton({ paperId, onReactionChange, current_sess
             method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"//,
-             // "X-Session-Name": current_session, // Custom header to send session information
+              "Content-Type": "application/json",
+              XSessionName: session_name, // Custom header to send session information
             },
           }
         );
@@ -42,8 +44,8 @@ export default function ReactionButton({ paperId, onReactionChange, current_sess
             method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"//,
-              //"X-Session-Name": current_session, // Custom header to send session information
+              "Content-Type": "application/json",
+              XSessionName: session_name, // Custom header to send session information
             },
           }
         );
@@ -64,7 +66,7 @@ export default function ReactionButton({ paperId, onReactionChange, current_sess
     }
 
     fetchReaction();
-  }, [paperId, token]);
+  }, [paperId, token, session_name]);
 
   const handleReaction = async (reactionType, session) => {
     if (!token) return;
@@ -96,7 +98,7 @@ export default function ReactionButton({ paperId, onReactionChange, current_sess
   return (
     <div className="flex gap-3 items-center absolute bottom-2 right-2">
       <button
-        onClick={() => handleReaction("like", current_session)}
+        onClick={() => handleReaction("like", session_name)}
         className="focus:outline-none"
       >
         <HeartIcon
@@ -106,7 +108,7 @@ export default function ReactionButton({ paperId, onReactionChange, current_sess
         />
       </button>
       <button
-        onClick={() => handleReaction("dislike", current_session)}
+        onClick={() => handleReaction("dislike", session_name)}
         className="focus:outline-none"
       >
         <HandThumbDownIcon

@@ -26,7 +26,7 @@ app = Flask(__name__)
 CORS(app, 
      resources={r"/*": {"origins": [FRONTEND_URL]}}, 
      supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Access-Control-Allow-Credentials"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Access-Control-Allow-Credentials","XSessionName"],
      methods=["GET", "POST", "OPTIONS", "DELETE"]
 )
 
@@ -194,8 +194,10 @@ def get_papers_by_reaction():
             return error_response  # Return error if token is invalid
 
         reaction_type = request.args.get("reaction_type", "like")  # Default to "like"
-        #session_name = request.headers.get('X-Session-Name')  # Use the correct header namez
+        session_name = request.headers.get('XSessionName')  # Use the correct header names
 
+        print("Session name in get_papers is ",session_name)
+        print("USER ID IS",user_id)
         print(f"Fetching {reaction_type}d papers for user: {user_id}")
 
         # Ensure reaction_type is valid
@@ -234,7 +236,7 @@ def get_papers_by_reaction():
             for row in response.data
         ]
 
-        print(f"User {user_id} {reaction_type}d papers:", papers)
+        #print(f"User {user_id} {reaction_type}d papers:", papers)
 
         return jsonify({"papers": papers}), 200
 
@@ -254,6 +256,9 @@ def react_to_paper():
         paper_id = data.get("paper_id")
         reaction_type = data.get("reaction_type")  # 'like' or 'dislike'
         session_name=data.get("user_session")
+
+        response= (supabase.table("user_sessions").select("user_id"))
+
 
         if not paper_id or reaction_type not in ["like", "dislike"]:
             return jsonify({"error": "Missing or invalid paper_id/reaction_type"}), 400

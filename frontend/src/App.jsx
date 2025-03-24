@@ -531,6 +531,7 @@ export default function App() {
                 <ReactionPapers
                   reactionType="dislike"
                   onSearch={handleSearch}
+                  session_name={activeSession}
                 />
               }
             />

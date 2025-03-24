@@ -3,13 +3,15 @@ import { useAuth } from "../AuthContext";
 import DisplayResults from "./DisplayResults";
 import { useNavigate } from "react-router-dom";
 
-export default function ReactionPapers({ reactionType, onSearch }) {
+export default function ReactionPapers({ reactionType, onSearch, session_name }) {
   const { token } = useAuth();
   const [papers, setPapers] = useState([]);
   const [filteredPapers, setFilteredPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  console.log("Calling from reactionpapers, session is ",session_name)
+  const test="testing123"
 
   useEffect(() => {
     async function fetchReactionPapers() {
@@ -77,7 +79,8 @@ export default function ReactionPapers({ reactionType, onSearch }) {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       )}
-
+        {session_name}
+        {test}
       {!token ? (
         <p className="text-red-500 font-semibold text-center">
           Only signed-in users can view {reactionType} papers. Please log in.
@@ -98,6 +101,7 @@ export default function ReactionPapers({ reactionType, onSearch }) {
           onSearch={(embedding) => {
             onSearch(embedding, 6, true);
             navigate("/");
+          session_name={session_name}
           }}
         />
       )}
