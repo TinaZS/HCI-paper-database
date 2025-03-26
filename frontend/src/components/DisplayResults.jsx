@@ -142,7 +142,6 @@ export default function DisplayResults({
                 >
                   Find Similar Papers
                 </button>
-                <div>toast{currentSessionName}toast</div> {/* This will render session_name */}
               <ReactionButton
                 paperId={paper.paper_id}
                 onReactionChange={(newReaction) =>

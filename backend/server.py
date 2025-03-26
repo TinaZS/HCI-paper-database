@@ -196,6 +196,11 @@ def get_papers_by_reaction():
         reaction_type = request.args.get("reaction_type", "like")  # Default to "like"
         session_name = request.headers.get('XSessionName')  # Use the correct header names
 
+        if session_name=="Session 1":
+            print("EQUIVALENT")
+        else:
+            print("NOT EQUIVALENT")
+
         print("Session name in get_papers is ",session_name)
         print("USER ID IS",user_id)
         print(f"Fetching {reaction_type}d papers for user: {user_id}")
@@ -205,6 +210,10 @@ def get_papers_by_reaction():
             return jsonify({"error": "Invalid reaction_type"}), 400
 
         #r1= (supabase.table("user_session").eq("user_id",user_id).eq("session_name",session_name).execute())
+        print("user id is ", user_id)
+        print("reaction type is ",reaction_type)
+        print("session name is ",session_name)
+
 
         # Query Supabase filtering by reaction type
         response = (
@@ -216,6 +225,8 @@ def get_papers_by_reaction():
             #.eq("session_name", session_name)
             .execute()
         )
+
+        #print(response)
 
         if not response or not hasattr(response, "data"):
             print(f"Supabase response issue for {reaction_type}:", response)
@@ -230,13 +241,13 @@ def get_papers_by_reaction():
                 "abstract": row["new_papers"].get("abstract", "No abstract available"),
                 "datePublished": row["new_papers"].get("published_date", "Unknown"),
                 "link": row["new_papers"]["link"],
-                "categories": row["new_papers"]["categories"],
-                "embedding": row["new_papers"]["embedding"]
+                "categories": row["new_papers"]["categories"]#,
+                #"embedding": row["new_papers"]["embedding"]
             }
             for row in response.data
         ]
 
-        #print(f"User {user_id} {reaction_type}d papers:", papers)
+        print(f"User {user_id} {reaction_type}d papers:", papers)
 
         return jsonify({"papers": papers}), 200
 
