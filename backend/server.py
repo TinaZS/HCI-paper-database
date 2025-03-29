@@ -354,6 +354,13 @@ def delete_session():
 
         print(f"Supabase Response: {response}")  # Log the response to inspect it
 
+        response2 = supabase.table("likes").delete().match({
+            "user_id": user_id,
+            "session_name":session_name
+        }).execute()
+
+        print(f"Supabase Response: {response2}")  # Log the response to inspect it
+
         if not response.data:  # Check if no data was returned, meaning no session was deleted
             return jsonify({"error": "Session not found or failed to delete"}), 404
         

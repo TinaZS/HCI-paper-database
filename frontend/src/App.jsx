@@ -13,22 +13,33 @@ import { supabase } from "./supabaseClient";
 export default function App() {
   const [results, setResults] = useState([]);
   const [selectedQuery, setSelectedQuery] = useState("");
-  const [categories, setCategories] = useState({});
+  const [categories, setCategories] = useState(categoriesData); // Initialize with data
   const [selectedCategory, setSelectedCategory] = useState("");
   const loadingBarRef = useRef(null);
-  const [sortBy, setSortBy] = useState("score"); // Default to sorting by score
-  const { token } = useAuth(); // ✅ Get the token from context
-  const [sessions, setSessions] = useState([null]);
+  const [sortBy, setSortBy] = useState("score");
+  const { token, user } = useAuth(); // Get both token and user from context
+  const [sessions, setSessions] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
   const [showPopup, setShowPopup] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [newSessionName, setNewSessionName] = useState("");
   const [renamingSession, setRenamingSession] = useState(null);
   const [renameValue, setRenameValue] = useState("");
-  const { user } = useAuth(); // Get user here, not inside a function
-
   const [dislikedPaperIds, setDislikedPaperIds] = useState([]);
   const [filteredResults, setFilteredResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
+
+    // Add this near your other useState declarations
+  const [sidebarVisible, setSidebarVisible] = useState(() => {
+    // Initialize from localStorage, default to true if not set
+    const savedState = localStorage.getItem('sidebarVisible');
+    return savedState === null ? true : savedState === 'true';
+  });
+
+  // Add this effect to save sidebar state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarVisible', sidebarVisible);
+  }, [sidebarVisible]);
 
   // Handle dropdown change
   const handleReactionChange = (paperId, newReaction) => {
@@ -61,33 +72,28 @@ export default function App() {
         prev.filter((paper) => paper.paper_id !== paperId)
       );
 
-      // ✅ Delay re-fetch for animation
       setTimeout(() => {
         if (onReactionChange) onReactionChange();
-      }, 350); // match `framer-motion` exit
+      }, 350);
       return;
     }
   };
 
-  useEffect(() => {
-    console.log('activeSession changed:', activeSession);
-  }, [activeSession]);
-
+  // Fetch disliked papers only once when user changes
   useEffect(() => {
     async function fetchDisliked() {
       if (user) {
         const { data, error } = await supabase
-          .from("likes") // ✅ correct table name
+          .from("likes")
           .select("paper_id")
-          .eq("reaction_type", "dislike") // ✅ correct column
+          .eq("reaction_type", "dislike")
           .eq("user_id", user.id);
 
         if (!error && data) {
           const ids = data.map((row) => row.paper_id);
-          console.log("✅ Fetched dislikedPaperIds:", ids);
           setDislikedPaperIds(ids);
         } else {
-          console.error("❌ Supabase query failed:", { error, user });
+          console.error("Supabase query failed:", { error, user });
         }
       } else {
         setDislikedPaperIds([]);
@@ -97,10 +103,25 @@ export default function App() {
     fetchDisliked();
   }, [user]);
 
+  // Consolidated initialization function - runs ONCE at app start
   useEffect(() => {
-    console.log("Loaded categories:", categoriesData);
-    setCategories(categoriesData);
-  }, []);
+    async function initializeApp() {
+      setIsLoading(true);
+      
+      // If user is logged in, fetch their sessions
+      if (user && token) {
+        await fetchUserSessions();
+      } else {
+        // No user, initialize with empty sessions
+        setSessions([]);
+        setActiveSession(null);
+      }
+      
+      setIsLoading(false);
+    }
+
+    initializeApp();
+  }, [user, token]); // Only re-run if user or token changes
 
   // Function to check if the session name already exists
   const isSessionNameUnique = (name) => {
@@ -108,33 +129,33 @@ export default function App() {
   };
 
   const createNewSession = async () => {
-    if (!newSessionName.trim()) return; // Prevent empty names
+    if (!newSessionName.trim()) return;
 
-    // Check if the session name is unique
     if (!isSessionNameUnique(newSessionName)) {
       alert("Session name already exists. Please choose a different name.");
       return;
     }
 
-    const userId = user?.id; // Get user ID from context
+    const userId = user?.id;
     if (!userId) {
       console.error("User is not logged in.");
       return;
     }
 
-    // Update the local sessions state
-    setSessions([...sessions, newSessionName]);
+    // Update the local state first
+    setSessions((prev) => [...prev, newSessionName]);
     setActiveSession(newSessionName);
     localStorage.setItem('activeSession', newSessionName);
     setNewSessionName("");
 
-    // Send a POST request to the backend to insert the session into Supabase
+    // Then update the backend
     try {
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
       const response = await fetch(`${API_BASE_URL}/create-session`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           user_id: userId,
@@ -158,7 +179,8 @@ export default function App() {
   };
 
   const confirmDeletion = async () => {
-    setSessions(sessions.filter((s) => s !== confirmDelete));
+    // Update local state first
+    setSessions((prev) => prev.filter((s) => s !== confirmDelete));
 
     if (activeSession === confirmDelete) {
       const newActiveSession = sessions[0] || "";
@@ -169,19 +191,20 @@ export default function App() {
     setConfirmDelete(null);
     setShowPopup(null);
 
-    const userId = user?.id; // Get user ID from context
+    // Then update the backend
+    const userId = user?.id;
     if (!userId) {
       console.error("User is not logged in.");
       return;
     }
 
-    // Send a POST request to the backend to insert the session into Supabase
     try {
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
       const response = await fetch(`${API_BASE_URL}/delete-session`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           user_id: userId,
@@ -200,82 +223,105 @@ export default function App() {
     }
   };
 
-// 1. Modify the useEffect that fetches user sessions
-useEffect(() => {
-  if (user && token) {  // ✅ Ensures both user and token are set
-    fetchUserSessions();
-  }
-}, [user, token]);
+  const handleSessionChange = (session) => {
+    setActiveSession(session);
+    localStorage.setItem('activeSession', session);
+  };
 
-useEffect(() => {
-  const savedSession = localStorage.getItem('activeSession');
-  if (savedSession && sessions.includes(savedSession)) {
-    setActiveSession(savedSession);
-  }
-}, [sessions]);
-
-const handleSessionChange = (session) => {
-  setActiveSession(session);
-  localStorage.setItem('activeSession', session);
-};
-
-const fetchUserSessions = async () => {
-  if (!user?.id) return;
-
-  try {
-    const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-    const response = await fetch(`${API_BASE_URL}/get-user-sessions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ user_id: user.id }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch user sessions");
-    }
-
-    const data = await response.json();
-    setSessions(data.sessions);
+  const fetchUserSessions = async () => {
+    if (!user?.id || !token) return [];
     
-    // Check if there's a saved session in localStorage
-    const savedSession = localStorage.getItem('activeSession');
-    
-    // Set active session based on localStorage or first session
-    if (savedSession && data.sessions.includes(savedSession)) {
-      setActiveSession(savedSession);
-    } else {
-      setActiveSession(data.sessions[0] || "");
-      // Save this to localStorage
-      if (data.sessions[0]) {
-        localStorage.setItem('activeSession', data.sessions[0]);
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await fetch(`${API_BASE_URL}/get-user-sessions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch user sessions");
       }
+
+      const data = await response.json();
+      
+      // Get saved session from localStorage
+      const savedSession = localStorage.getItem('activeSession');
+      
+      // Set active session based on localStorage or first session
+      if (savedSession && data.sessions.includes(savedSession)) {
+        setActiveSession(savedSession);
+      } else if (data.sessions.length > 0) {
+        setActiveSession(data.sessions[0]);
+        localStorage.setItem('activeSession', data.sessions[0]);
+      } else {
+        setActiveSession(null);
+      }
+      
+      // Update sessions state
+      setSessions(data.sessions || []);
+      
+      return data.sessions || [];
+    } catch (error) {
+      console.error("Error fetching user sessions:", error);
+      return [];
     }
-    
-    console.log("DATA SESSIONS ARE ", data.sessions);
-    console.log("ACTIVE SESSION IS ", savedSession || data.sessions[0] || "");
-  } catch (error) {
-    console.error("Error fetching user sessions:", error);
-  }
-};
+  };
 
   // Rename a session
-  const renameSession = (oldName) => {
-    // Check if the new name is unique
+  const renameSession = async (oldName) => {
+    if (!renameValue.trim()) return;
+    
     if (!isSessionNameUnique(renameValue)) {
       alert("Session name already exists. Please choose a different name.");
       return;
     }
 
-    if (!renameValue.trim()) return; // Prevent empty names
-    setSessions(sessions.map((s) => (s === oldName ? renameValue : s)));
+    // Update local state first
+    setSessions((prev) => prev.map((s) => (s === oldName ? renameValue : s)));
+    
     if (activeSession === oldName) {
-      setActiveSession(renameValue); // Update active session name
+      setActiveSession(renameValue);
+      localStorage.setItem('activeSession', renameValue);
     }
+    
     setRenamingSession(null);
     setShowPopup(null);
+
+    // Then update the backend
+    const userId = user?.id;
+    if (!userId) {
+      console.error("User is not logged in.");
+      return;
+    }
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await fetch(`${API_BASE_URL}/rename-session`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          old_name: oldName,
+          new_name: renameValue,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to rename session in the backend");
+      }
+
+      const data = await response.json();
+      console.log("Session renamed in backend:", data);
+    } catch (error) {
+      console.error("Error renaming session:", error);
+    }
   };
 
   async function handleSearch(
@@ -286,28 +332,17 @@ const fetchUserSessions = async () => {
   ) {
     if (!token) return;
     try {
-      let trimmedQuery = query; // Initialize trimmedQuery with the original query
+      let trimmedQuery = query;
 
-      // Only trim the query if we're not using embeddings
       if (useEmbeddings == false) {
-        trimmedQuery = query.trim(); // Trim the query
+        trimmedQuery = query.trim();
         if (!trimmedQuery) {
           console.warn("Ignoring empty search query.");
           return;
         }
       }
 
-      console.log("Sending search request...");
       loadingBarRef.current.continuousStart();
-
-      const startTime = performance.now(); // Start timing
-      console.log(`Start time is ${startTime}`);
-
-      console.log(numPapers);
-      console.log(trimmedQuery);
-      console.log(searchTopic);
-
-      console.log(token);
 
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
       const response = await fetch(`${API_BASE_URL}/search`, {
@@ -346,9 +381,8 @@ const fetchUserSessions = async () => {
         return handleSearch(query, numPapers * 2, useEmbeddings, searchTopic);
       }
 
-      // ✅ Safe to show
-      setResults(allResults); // ✅ keep full pool
-      setFilteredResults(allResults.slice(0, 6)); // only show 6
+      setResults(allResults);
+      setFilteredResults(allResults.slice(0, 6));
     } catch (error) {
       console.error("Error fetching results:", error);
     } finally {
@@ -356,100 +390,145 @@ const fetchUserSessions = async () => {
     }
   }
 
+  // Show loading state while initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#D5C7AC] via-[#53545D] to-[#00234B] flex flex-col items-center justify-center">
+        <div className="text-white text-xl">Loading PaperMatch...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-md p-4 relative">
-        <h2 className="text-lg font-bold mb-4">User Sessions</h2>
-
-        {/* Check if the user is logged in */}
-        {token ? (
-          <ul>
-            {sessions.map((session) => (
-              <li
-                key={session}
-                className={`cursor-pointer p-2 rounded-md flex justify-between items-center ${
-                  activeSession === session ? "bg-blue-200" : ""
-                }`}
-                onClick={() => handleSessionChange(session)}
-                style={{ position: "relative" }}
-              >
-                {/* Show input when renaming */}
-                {renamingSession === session ? (
-                  <input
-                    type="text"
-                    className="border px-2 py-1 rounded-md w-full"
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onBlur={() => renameSession(session)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && renameSession(session)
-                    }
-                    autoFocus
-                  />
-                ) : (
-                  <span>{session}</span>
-                )}
-
-                <button
-                  className="cursor-pointer px-2 text-gray-500 hover:text-black"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPopup(showPopup === session ? null : session);
-                  }}
-                >
-                  ⋮
-                </button>
-
-                {/* Popup Menu */}
-                {showPopup === session && (
-                  <div className="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg p-2 flex flex-col gap-2 w-48 border border-gray-200 z-10">
-                    <button
-                      className="text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none"
-                      onClick={() => {
-                        setRenamingSession(session);
-                        setRenameValue(session);
-                        setShowPopup(null); // Hide the popup after starting the renaming process
-                      }}
-                    >
-                      Rename
-                    </button>
-                    <button
-                      className="text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      onClick={() => deleteSession(session)}
-                    >
-                      Delete Session
-                    </button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Please log in to view your sessions.</p> // Message to show if the user is not logged in
-        )}
-
-        {/* New Session Input */}
-        {token && (
-          <div className="mt-2 flex gap-2 items-center">
-            <input
-              type="text"
-              className="border px-3 py-1 rounded-md flex-1"
-              placeholder="Session name"
-              value={newSessionName}
-              onChange={(e) => setNewSessionName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && createNewSession()}
-            />
+      {/* Hamburger Menu (visible when sidebar is hidden) */}
+      {!sidebarVisible && (
+        <button 
+          onClick={() => setSidebarVisible(true)}
+          className="fixed top-4 left-4 z-20 p-2 rounded-md bg-white shadow-md hover:bg-gray-100"
+          aria-label="Open sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      )}
+  
+      {/* Sidebar Container - Fixed width that doesn't expand onto the page */}
+      <div className={`w-64 h-full transition-transform duration-300 ease-in-out ${
+        sidebarVisible ? 'translate-x-0' : '-translate-x-full'
+      } fixed top-0 left-0 z-10`}>
+        {/* Sidebar Content - White background with full height */}
+        <div className="bg-white h-full flex flex-col w-full border-r">
+          <div className="p-4 flex justify-between items-center border-b">
+            <h2 className="text-lg font-bold">User Sessions</h2>
             <button
-              className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              onClick={createNewSession}
+              onClick={() => setSidebarVisible(false)}
+              className="p-1 rounded-full hover:bg-gray-100"
+              aria-label="Close sidebar"
             >
-              + Add
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
-        )}
+          
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Check if the user is logged in */}
+            {token ? (
+              <ul className="space-y-1">
+                {sessions.map((session) => (
+                  <li
+                    key={session}
+                    className={`cursor-pointer p-2 rounded-md flex justify-between items-center ${
+                      activeSession === session ? "bg-blue-100" : ""
+                    }`}
+                    onClick={() => handleSessionChange(session)}
+                    style={{ position: "relative" }}
+                  >
+                    {/* Show input when renaming */}
+                    {renamingSession === session ? (
+                      <input
+                        type="text"
+                        className="border px-2 py-1 rounded-md w-full"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onBlur={() => renameSession(session)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && renameSession(session)
+                        }
+                        autoFocus
+                      />
+                    ) : (
+                      <span>{session}</span>
+                    )}
+  
+                    <button
+                      className="cursor-pointer px-2 text-gray-500 hover:text-black"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPopup(showPopup === session ? null : session);
+                      }}
+                    >
+                      ⋮
+                    </button>
+  
+                    {/* Popup Menu */}
+                    {showPopup === session && (
+                      <div className="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg p-2 flex flex-col gap-2 w-48 border border-gray-200 z-10">
+                        <button
+                          className="text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none"
+                          onClick={() => {
+                            setRenamingSession(session);
+                            setRenameValue(session);
+                            setShowPopup(null);
+                          }}
+                        >
+                          Rename
+                        </button>
+                        <button
+                          className="text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          onClick={() => deleteSession(session)}
+                        >
+                          Delete Session
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Please log in to view your sessions.</p>
+            )}
+          </div>
+  
+          {/* New Session Input - Fixed at bottom */}
+          {token && (
+            <div className="p-4 border-t">
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  className="border px-3 py-2 rounded-md w-full"
+                  placeholder="Session name"
+                  value={newSessionName}
+                  onChange={(e) => setNewSessionName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && createNewSession()}
+                />
+                <button
+                  className="w-full px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  onClick={createNewSession}
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
+  
       {confirmDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center transform transition-all scale-95 hover:scale-100">
@@ -474,100 +553,104 @@ const fetchUserSessions = async () => {
           </div>
         </div>
       )}
-
-      <div className="min-h-screen bg-gradient-to-br from-[#D5C7AC] via-[#53545D] to-[#00234B] flex flex-col items-center px-4">
-        <LoadingBar ref={loadingBarRef} color="#60A5FA" height={10} />
-        <Header />
-
-        <div className="w-full max-w-4xl">
-          <Routes>
-            {/* ✅ Home Page */}
-            <Route
-              path="/"
-              element={
-                <>
-                  <h1
-                    className="text-6xl font-bold text-center mt-16 mb-12 tracking-wide"
-                    style={{ fontFamily: "Gloock", color: "#D5C7AC" }}
-                  >
-                    PaperMatch
-                  </h1>
-
-                  <QueryInput
-                    onSearch={handleSearch}
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    selectedQuery={selectedQuery}
-                    onCategoryChange={setSelectedCategory}
-                    onQueryChange={setSelectedQuery}
-                  />
-                  {/* 🔹 Sort By Section */}
-                  <div className="mt-6">
-                    <label className="block text-lg font-serif font-semibold text-[#3E3232] mb-2">
-                      Sort by:
-                    </label>
-                    <select
-                      className="w-full p-3 border border-[#8E7965] bg-[#F5EDE3] text-[#3E3232] 
-               rounded-md focus:ring-2 focus:ring-[#6D4C41] outline-none 
-               transition duration-150"
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
+  
+      {/* Main content area with margin adjustment */}
+      <div className={`transition-all duration-300 ease-in-out flex-grow ${
+        sidebarVisible ? 'ml-64' : 'ml-0'
+      }`}>
+        <div className="min-h-screen bg-gradient-to-br from-[#D5C7AC] via-[#53545D] to-[#00234B] flex flex-col items-center px-4">
+          <LoadingBar ref={loadingBarRef} color="#60A5FA" height={10} />
+          <Header />
+  
+          <div className="w-full max-w-4xl">
+            <Routes>
+              {/* Home Page */}
+              <Route
+                path="/"
+                element={
+                  <>
+                    <h1
+                      className="text-6xl font-bold text-center mt-16 mb-12 tracking-wide"
+                      style={{ fontFamily: "Gloock", color: "#D5C7AC" }}
                     >
-                      <option value="score">Score (highest first)</option>
-                      <option value="date">Date (newest first)</option>
-                    </select>
-                  </div>
-
-                  {/* 🔹 Suggested Searches Section */}
-                  <div className="mt-6">
-                    <h2 className="text-lg font-serif font-semibold text-[#3E3232] mb-3">
-                      Suggested Searches: {selectedQuery}
-                    </h2>
-                    <div className="flex gap-2 flex-wrap">
-                      {suggestedQueries.map((query, index) => (
-                        <button
-                          key={index}
-                          className="px-4 py-2 bg-[#B8A290] text-[#3E3232] rounded-md font-serif 
-                   hover:bg-[#8E7965] hover:text-[#F5EDE3] transition duration-150"
-                          onClick={() => handleSearch(query)}
-                        >
-                          {query}
-                        </button>
-                      ))}
+                      PaperMatch
+                    </h1>
+  
+                    <QueryInput
+                      onSearch={handleSearch}
+                      categories={categories}
+                      selectedCategory={selectedCategory}
+                      selectedQuery={selectedQuery}
+                      onCategoryChange={setSelectedCategory}
+                      onQueryChange={setSelectedQuery}
+                    />
+                    {/* Sort By Section */}
+                    <div className="mt-6">
+                      <label className="block text-lg font-serif font-semibold text-[#3E3232] mb-2">
+                        Sort by:
+                      </label>
+                      <select
+                        className="w-full p-3 border border-[#8E7965] bg-[#F5EDE3] text-[#3E3232] 
+                         rounded-md focus:ring-2 focus:ring-[#6D4C41] outline-none 
+                         transition duration-150"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                      >
+                        <option value="score">Score (highest first)</option>
+                        <option value="date">Date (newest first)</option>
+                      </select>
                     </div>
-                  </div>
-                  <DisplayResults
-                    results={results}
+  
+                    {/* Suggested Searches Section */}
+                    <div className="mt-6">
+                      <h2 className="text-lg font-serif font-semibold text-[#3E3232] mb-3">
+                        Suggested Searches: {selectedQuery}
+                      </h2>
+                      <div className="flex gap-2 flex-wrap">
+                        {suggestedQueries.map((query, index) => (
+                          <button
+                            key={index}
+                            className="px-4 py-2 bg-[#B8A290] text-[#3E3232] rounded-md font-serif 
+                             hover:bg-[#8E7965] hover:text-[#F5EDE3] transition duration-150"
+                            onClick={() => handleSearch(query)}
+                          >
+                            {query}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <DisplayResults
+                      results={results}
+                      onSearch={handleSearch}
+                      sortBy={sortBy}
+                      dislikedPaperIds={dislikedPaperIds}
+                      refillResults={handleSearch}
+                      session_name={activeSession}
+                    />
+                  </>
+                }
+              />
+  
+              {/* Liked Papers Page */}
+              <Route
+                path="/saved"
+                element={
+                  <ReactionPapers reactionType="like" onSearch={handleSearch} session_name={activeSession} />
+                }
+              />
+              <Route
+                path="/disliked"
+                element={
+                  <ReactionPapers
+                    reactionType="dislike"
                     onSearch={handleSearch}
-                    sortBy={sortBy}
-                    dislikedPaperIds={dislikedPaperIds}
-                    refillResults={handleSearch}
                     session_name={activeSession}
                   />
-                </>
-              }
-            />
-
-            {/* ✅ Liked Papers Page */}
-            <Route
-              path="/saved"
-              element={
-                <ReactionPapers reactionType="like" onSearch={handleSearch} session_name={activeSession} />
-              }
-            />
-            <Route
-              path="/disliked"
-              element={
-                <ReactionPapers
-                  reactionType="dislike"
-                  onSearch={handleSearch}
-                  session_name={activeSession}
-                />
-              }
-            />
-          </Routes>
+                }
+              />
+            </Routes>
+          </div>
         </div>
       </div>
     </div>
-  );
-}
+  )};
