@@ -222,7 +222,7 @@ def get_papers_by_reaction():
             .select("paper_id, reaction_type, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
             .eq("user_id", user_id)
             .eq("reaction_type", reaction_type)  # Filter only for like/dislike
-            #.eq("session_name", session_name)
+            .eq("session_name", session_name)
             .execute()
         )
 
@@ -301,6 +301,7 @@ def react_to_paper():
         return jsonify({"message": f"Paper {reaction_type}d successfully!"}), 200
 
     except Exception as e:
+        print({"error": "Something went wrong", "details": str(e)})
         return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 

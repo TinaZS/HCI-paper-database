@@ -29,6 +29,7 @@ export default function ReactionPapers({ reactionType, onSearch, session_name })
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
+              XSessionName: session_name,
             },
           }
         );
@@ -48,7 +49,7 @@ export default function ReactionPapers({ reactionType, onSearch, session_name })
     }
 
     fetchReactionPapers();
-  }, [token, reactionType]); // ✅ React to changes in reactionType
+  }, [token, reactionType,session_name]); // ✅ React to changes in reactionType
 
   useEffect(() => {
     const lowerQuery = searchQuery.toLowerCase();
@@ -62,7 +63,7 @@ export default function ReactionPapers({ reactionType, onSearch, session_name })
           paper.categories.join(", ").toLowerCase().includes(lowerQuery))
     );
     setFilteredPapers(filtered);
-  }, [searchQuery, papers]);
+  }, [searchQuery, papers, session_name]);
 
   return (
     <div className="p-6 flex flex-col items-center">

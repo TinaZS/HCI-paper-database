@@ -18,8 +18,8 @@ export default function App() {
   const loadingBarRef = useRef(null);
   const [sortBy, setSortBy] = useState("score"); // Default to sorting by score
   const { token } = useAuth(); // ✅ Get the token from context
-  const [sessions, setSessions] = useState(["Session 1"]);
-  const [activeSession, setActiveSession] = useState("Session 1");
+  const [sessions, setSessions] = useState([null]);
+  const [activeSession, setActiveSession] = useState(null);
   const [showPopup, setShowPopup] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [newSessionName, setNewSessionName] = useState("");
@@ -125,6 +125,7 @@ export default function App() {
     // Update the local sessions state
     setSessions([...sessions, newSessionName]);
     setActiveSession(newSessionName);
+    localStorage.setItem('activeSession', newSessionName);
     setNewSessionName("");
 
     // Send a POST request to the backend to insert the session into Supabase
@@ -160,7 +161,9 @@ export default function App() {
     setSessions(sessions.filter((s) => s !== confirmDelete));
 
     if (activeSession === confirmDelete) {
-      setActiveSession(sessions[0] || "");
+      const newActiveSession = sessions[0] || "";
+      setActiveSession(newActiveSession);
+      localStorage.setItem('activeSession', newActiveSession);
     }
 
     setConfirmDelete(null);
@@ -197,39 +200,66 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    if (token) {
-      fetchUserSessions();
+// 1. Modify the useEffect that fetches user sessions
+useEffect(() => {
+  if (user && token) {  // ✅ Ensures both user and token are set
+    fetchUserSessions();
+  }
+}, [user, token]);
+
+useEffect(() => {
+  const savedSession = localStorage.getItem('activeSession');
+  if (savedSession && sessions.includes(savedSession)) {
+    setActiveSession(savedSession);
+  }
+}, [sessions]);
+
+const handleSessionChange = (session) => {
+  setActiveSession(session);
+  localStorage.setItem('activeSession', session);
+};
+
+const fetchUserSessions = async () => {
+  if (!user?.id) return;
+
+  try {
+    const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+    const response = await fetch(`${API_BASE_URL}/get-user-sessions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_id: user.id }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch user sessions");
     }
-  }, [token]);
 
-  const fetchUserSessions = async () => {
-    if (!user?.id) return;
-
-    try {
-      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-      const response = await fetch(`${API_BASE_URL}/get-user-sessions`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user_id: user.id }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch user sessions");
-      }
-
-      const data = await response.json();
-      setSessions(data.sessions);
+    const data = await response.json();
+    setSessions(data.sessions);
+    
+    // Check if there's a saved session in localStorage
+    const savedSession = localStorage.getItem('activeSession');
+    
+    // Set active session based on localStorage or first session
+    if (savedSession && data.sessions.includes(savedSession)) {
+      setActiveSession(savedSession);
+    } else {
       setActiveSession(data.sessions[0] || "");
-      console.log("DATA SESSEIONS ARE ",data.sessions);
-      console.log("ACTIVE SESSION IS ",data.sessions[0] || "")
-    } catch (error) {
-      console.error("Error fetching user sessions:", error);
+      // Save this to localStorage
+      if (data.sessions[0]) {
+        localStorage.setItem('activeSession', data.sessions[0]);
+      }
     }
-  };
+    
+    console.log("DATA SESSIONS ARE ", data.sessions);
+    console.log("ACTIVE SESSION IS ", savedSession || data.sessions[0] || "");
+  } catch (error) {
+    console.error("Error fetching user sessions:", error);
+  }
+};
 
   // Rename a session
   const renameSession = (oldName) => {
@@ -341,7 +371,7 @@ export default function App() {
                 className={`cursor-pointer p-2 rounded-md flex justify-between items-center ${
                   activeSession === session ? "bg-blue-200" : ""
                 }`}
-                onClick={() => setActiveSession(session)}
+                onClick={() => handleSessionChange(session)}
                 style={{ position: "relative" }}
               >
                 {/* Show input when renaming */}
