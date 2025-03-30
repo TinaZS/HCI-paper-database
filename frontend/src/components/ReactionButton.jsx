@@ -86,7 +86,7 @@ export default function ReactionButton({
       >
         <HandThumbDownIcon
           className={`w-6 h-6 ${
-            reaction === "dislike" ? "text-blue-500" : "text-gray-400"
+            reaction === "dislike" ? "text-[#293f80]" : "text-gray-400"
           }`}
         />
       </button>

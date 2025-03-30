@@ -531,8 +531,8 @@ export default function App() {
                         {suggestedQueries.map((query, index) => (
                           <button
                             key={index}
-                            className="px-4 py-2 bg-[#B8A290] text-[#3E3232] rounded-md"
                             onClick={() => handleSearch(query)}
+                            className="px-4 py-2 rounded-md bg-[#B8A290] text-[#3E3232] transition duration-200 transform hover:bg-[#A68C7C] hover:scale-105 shadow-sm hover:shadow-md focus:outline-none"
                           >
                             {query}
                           </button>

@@ -6,51 +6,23 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchUser() {
-      const { data, error } = await supabase.auth.getUser();
-      if (data?.user) {
-        setUser(data.user);
-
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.getSession();
-
-        if (sessionData?.session?.access_token) {
-          setToken(sessionData.session.access_token);
-        }
-
-        if (sessionError) {
-          console.error("Error fetching session:", sessionError);
-        }
-      }
-
-      if (error) {
-        console.error("Error fetching user:", error);
-      }
-    }
-
-    fetchUser();
-
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          setToken(session?.access_token || null);
-        } else {
-          setUser(null);
-          setToken(null);
-        }
+      (event, session) => {
+        console.log("🔐 Auth event:", event);
+        setUser(session?.user ?? null);
+        setToken(session?.access_token ?? null);
+        setLoading(false);
       }
     );
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => authListener.subscription.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, setUser }}>
+    <AuthContext.Provider value={{ user, token, setUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
