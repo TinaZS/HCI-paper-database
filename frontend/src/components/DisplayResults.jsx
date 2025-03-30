@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import categoriesData from "./categories.json";
 import ReactionButton from "./ReactionButton";
 import { useAuth } from "../AuthContext";
+import { supabase } from "../supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function DisplayResults({
@@ -11,14 +12,13 @@ export default function DisplayResults({
   dislikedPaperIds = [],
   refillResults,
   session_name,
+  reactionType,
 }) {
-
-  console.log("USER SESSION In display results is ",session_name)
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [selectedPaper, setSelectedPaper] = useState(null);
   const { user } = useAuth();
   const [visibleResults, setVisibleResults] = useState([]);
-  const currentSessionName = session_name;
+  const [reactions, setReactions] = useState({});
 
   useEffect(() => {
     let filtered = [...results];
@@ -37,6 +37,31 @@ export default function DisplayResults({
     }
   }, [results, dislikedPaperIds, user]);
 
+  // ✅ Fetch user reactions if reactionType is not given (e.g. homepage)
+  useEffect(() => {
+    async function fetchReactions() {
+      if (!user || !session_name || reactionType) return;
+
+      const { data, error } = await supabase
+        .from("likes")
+        .select("paper_id, reaction_type")
+        .eq("user_id", user.id)
+        .eq("session_name", session_name);
+
+      if (!error && data) {
+        const map = {};
+        for (const r of data) {
+          map[r.paper_id] = r.reaction_type;
+        }
+        setReactions(map);
+      } else {
+        console.error("Failed to fetch reactions", error);
+      }
+    }
+
+    fetchReactions();
+  }, [user, session_name, reactionType]);
+
   const handleReactionChange = (paperId, newReaction) => {
     if (newReaction === "dislike") {
       setVisibleResults((prev) => {
@@ -52,6 +77,7 @@ export default function DisplayResults({
         return updated;
       });
     }
+    setReactions((prev) => ({ ...prev, [paperId]: newReaction }));
   };
 
   const sortedResults = [...visibleResults].sort((a, b) => {
@@ -142,12 +168,14 @@ export default function DisplayResults({
                 >
                   Find Similar Papers
                 </button>
-              <ReactionButton
-                paperId={paper.paper_id}
-                onReactionChange={(newReaction) =>
-                  handleReactionChange(paper.paper_id, newReaction)}
-                session_name={session_name}
-              />
+                <ReactionButton
+                  paperId={paper.paper_id}
+                  onReactionChange={(newReaction) =>
+                    handleReactionChange(paper.paper_id, newReaction)
+                  }
+                  session_name={session_name}
+                  initialReaction={reactionType || reactions[paper.paper_id]}
+                />
               </div>
             </motion.div>
           );

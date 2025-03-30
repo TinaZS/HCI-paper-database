@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "./supabaseClient"; // Ensure correct import path
+import { supabase } from "./supabaseClient";
 
 const AuthContext = createContext();
 
@@ -13,22 +13,18 @@ export function AuthProvider({ children }) {
       if (data?.user) {
         setUser(data.user);
 
-        // ✅ Fetch the session correctly
         const { data: sessionData, error: sessionError } =
           await supabase.auth.getSession();
 
         if (sessionData?.session?.access_token) {
           setToken(sessionData.session.access_token);
-          console.log(
-            "JWT Token (on app load):",
-            sessionData.session.access_token
-          ); // Debugging line ✅
         }
 
         if (sessionError) {
           console.error("Error fetching session:", sessionError);
         }
       }
+
       if (error) {
         console.error("Error fetching user:", error);
       }
@@ -36,13 +32,11 @@ export function AuthProvider({ children }) {
 
     fetchUser();
 
-    // ✅ Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
           setToken(session?.access_token || null);
-          console.log("JWT Token (on auth change):", session?.access_token); // Debugging line ✅
         } else {
           setUser(null);
           setToken(null);

@@ -84,23 +84,21 @@ def search():
     print("TOPIC IS ",topic)
 
 
-    auth_header = request.headers.get('Authorization')
+    auth_header = request.headers.get("Authorization")
+    user_id = None  # Default to None for guests
 
-    if not auth_header:
-        return jsonify({"authenticated": False, "error": "Authorization token required"}), 401
+    if auth_header:
+        try:
+            token = auth_header.split(" ")[1]
+            user = supabase.auth.get_user(token)
+            user_id = user.user.id
+            print("Authenticated user ID is", user_id)
+        except Exception as e:
+            print("Warning: invalid or expired token. Proceeding anonymously.")
+    else:
+        print("No token provided. Proceeding as guest.")
 
-    try:
-        # Extract token from the 'Bearer <token>' format
-        token = auth_header.split(" ")[1]
 
-        # Get the user from Supabase using the token
-        user = supabase.auth.get_user(token)
-
-        user_id=user.user.id
-        print("User ID is ",user_id)
-
-    except Exception as e:
-        return jsonify({"authenticated": False, "error": str(e)}), 500
 
 
     numPapers = data.get("numPapers")
