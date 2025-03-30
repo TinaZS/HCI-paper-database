@@ -635,7 +635,7 @@ export default function App() {
               <Route
                 path="/saved"
                 element={
-                  <ReactionPapers reactionType="like" onSearch={handleSearch} session_name={activeSession} />
+                  <ReactionPapers reactionType="like" onSearch={handleSearch} session_name={activeSession} showAll={true}/>
                 }
               />
               <Route
@@ -645,6 +645,7 @@ export default function App() {
                     reactionType="dislike"
                     onSearch={handleSearch}
                     session_name={activeSession}
+                      showAll={true}
                   />
                 }
               />

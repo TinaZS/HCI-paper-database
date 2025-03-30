@@ -247,7 +247,8 @@ def get_papers_by_reaction():
             for row in response.data
         ]
 
-        print(f"User {user_id} {reaction_type}d papers:", papers)
+        #print(f"User {user_id} {reaction_type}d papers:", papers)
+        print("Returning ", len(papers))
 
         return jsonify({"papers": papers}), 200
 

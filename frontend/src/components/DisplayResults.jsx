@@ -11,6 +11,7 @@ export default function DisplayResults({
   dislikedPaperIds = [],
   refillResults,
   session_name,
+  showAll=false,
 }) {
 
   console.log("USER SESSION In display results is ",session_name)
@@ -62,7 +63,12 @@ export default function DisplayResults({
     return 0;
   });
 
-  const resultsToRender = sortedResults.slice(0, 6);
+  const resultsToRender=sortedResults;
+
+  if (showAll==true){
+    const resultsToRender = sortedResults.slice(0, 6);
+  }
+
 
   return (
     <div className="mt-6 w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 gap-6">

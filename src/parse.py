@@ -38,7 +38,23 @@ def parse_arxiv_data(xml_data):
 #Add category
         primary_category_element = entry.find("{http://arxiv.org/schemas/atom}primary_category")
         primary_category = primary_category_element.attrib["term"] if primary_category_element is not None else None
-        categories = [cat.attrib["term"] for cat in entry.findall("{http://www.w3.org/2005/Atom}category")]
+        
+        #categories = [cat.attrib["term"] for cat in entry.findall("{http://www.w3.org/2005/Atom}category")]
+
+
+        # Load categories.json
+        with open("categories.json", "r") as f:
+            valid_categories = json.load(f)
+
+        # Flatten valid categories into a set of keys (e.g., {"cs.AI", "cs.AR", ...})
+        valid_category_keys = {key for subdict in valid_categories.values() for key in subdict.keys()}
+
+        # Extract and filter categories from the webpage
+        categories = [
+            cat.attrib["term"]
+            for cat in entry.findall("{http://www.w3.org/2005/Atom}category")
+            if cat.attrib["term"] in valid_category_keys
+        ]
 
 
         unique_papers.append({

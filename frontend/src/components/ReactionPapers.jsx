@@ -3,7 +3,7 @@ import { useAuth } from "../AuthContext";
 import DisplayResults from "./DisplayResults";
 import { useNavigate } from "react-router-dom";
 
-export default function ReactionPapers({ reactionType, onSearch, session_name }) {
+export default function ReactionPapers({ reactionType, onSearch, session_name, showAll }) {
   const { token } = useAuth();
   const [papers, setPapers] = useState([]);
   const [filteredPapers, setFilteredPapers] = useState([]);
@@ -102,6 +102,7 @@ export default function ReactionPapers({ reactionType, onSearch, session_name })
             onSearch(embedding, 6, true);
             navigate("/");}}
           session_name={session_name}
+          showAll={true}
         />
       )}
     </div>
