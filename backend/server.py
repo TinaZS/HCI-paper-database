@@ -23,13 +23,12 @@ FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/
 
 app = Flask(__name__)
 
-CORS(app,
-     resources={r"/*": {"origins": [FRONTEND_URL]}},
+CORS(app, 
+     resources={r"/*": {"origins": "*"}}, 
      supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Access-Control-Allow-Credentials", "XSessionName"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Access-Control-Allow-Credentials","XSessionName"],
      methods=["GET", "POST", "OPTIONS", "DELETE"]
 )
-
 
 
 @app.before_request
