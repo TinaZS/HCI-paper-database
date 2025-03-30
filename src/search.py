@@ -158,12 +158,13 @@ def search(query, index, k=6, embedState=False,topic="",user_id=""):
         print("Attempt size is ",attempt_size)
         print("Attempt count is ",attempt_count)
     
-    results=results[:k]
     
     # Sorting the results by similarity_score in descending order
     results = sorted(results, key=lambda x: x['similarity_score'], reverse=True)
 
     for result in results:
         result["similarity_score"] = round(result["similarity_score"],2)
+    
+    results=results[:k]
 
     return results

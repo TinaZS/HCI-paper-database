@@ -89,10 +89,10 @@ export default function DisplayResults({
     return 0;
   });
 
-  const resultsToRender = sortedResults;
+  let resultsToRender = sortedResults;
 
-  if (showAll == true) {
-    const resultsToRender = sortedResults.slice(0, 6);
+  if (showAll == false) {
+    resultsToRender = sortedResults.slice(0, 6);
   }
 
   return (
