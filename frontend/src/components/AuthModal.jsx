@@ -72,7 +72,7 @@ export default function AuthModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+      <div className="bg-[#F5EDE3] text-[#3E3232] font-serif p-8 rounded-xl shadow-2xl w-96">
         <h2 className="text-xl font-semibold mb-4">
           {isResettingPassword
             ? "Forgot Password?"
@@ -86,7 +86,7 @@ export default function AuthModal({ onClose }) {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded mb-2"
+          className="w-full p-3 border border-[#8E7965] rounded-md mb-3 bg-white placeholder-gray-400"
         />
 
         {!isResettingPassword && (
@@ -95,7 +95,7 @@ export default function AuthModal({ onClose }) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded mb-2"
+            className="w-full p-3 border border-[#8E7965] rounded-md mb-3 bg-white placeholder-gray-400"
           />
         )}
 
@@ -103,7 +103,7 @@ export default function AuthModal({ onClose }) {
 
         <button
           onClick={handleAuth}
-          className="w-full p-2 rounded bg-blue-500 text-white"
+          className="w-full p-3 rounded-md bg-[#A68C7C] text-white font-semibold hover:bg-[#8E7965] transition duration-200"
         >
           {isResettingPassword
             ? "Send Magic Login Link"
@@ -118,7 +118,7 @@ export default function AuthModal({ onClose }) {
               clearMessages();
               setIsResettingPassword(true);
             }}
-            className="mt-2 text-sm text-blue-500 underline w-full"
+            className="mt-3 text-sm text-[#5C4B3B] underline w-full hover:text-[#3E3232] transition duration-150"
           >
             Forgot Password?
           </button>

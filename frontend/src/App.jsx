@@ -447,20 +447,23 @@ export default function App() {
 
       {confirmDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center transform transition-all scale-95 hover:scale-100">
-            <h3 className="text-lg font-semibold mb-4">Are you sure?</h3>
-            <p className="text-gray-600 mb-6">
-              You are about to delete <strong>{confirmDelete}</strong>.
+          <div className="bg-[#F5EDE3] p-6 rounded-xl shadow-xl w-96 text-center transform transition-all scale-95 hover:scale-100 border border-[#8B6C42]">
+            <h3 className="text-lg font-serif font-semibold text-[#3E3232] mb-3">
+              Confirm Deletion
+            </h3>
+            <p className="text-sm text-[#5C4033] mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-bold text-[#  ]">{confirmDelete}</span>?
             </p>
-            <div className="flex justify-center gap-6">
+            <div className="flex justify-center gap-4">
               <button
-                className="bg-red-500 text-white px-6 py-2 rounded-lg transition duration-300 hover:bg-red-600"
+                className="bg-[#A63A3A] text-white px-5 py-2 rounded-md font-medium font-serif hover:bg-[#872C2C] transition"
                 onClick={confirmDeletion}
               >
                 Delete
               </button>
               <button
-                className="bg-gray-200 px-6 py-2 rounded-lg text-gray-700 transition duration-300 hover:bg-gray-300"
+                className="bg-[#E6DAC6] text-[#3E3232] px-5 py-2 rounded-md font-medium font-serif hover:bg-[#D9CCB4] transition"
                 onClick={() => setConfirmDelete(null)}
               >
                 Cancel
@@ -505,11 +508,12 @@ export default function App() {
 
                     {/* Sort dropdown */}
                     <div className="mt-6">
-                      <label className="block text-lg font-serif font-semibold text-[#3E3232] mb-2">
+                      <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
                         Sort by:
                       </label>
+
                       <select
-                        className="w-full p-3 border border-[#8E7965] bg-[#F5EDE3] text-[#3E3232] rounded-md"
+                        className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
                       >
@@ -520,7 +524,7 @@ export default function App() {
 
                     {/* Suggested Queries */}
                     <div className="mt-6">
-                      <h2 className="text-lg font-serif font-semibold text-[#3E3232] mb-3">
+                      <h2 className="text-lg font-serif font-semibold text-[#E6DAC6] mb-3">
                         Suggested Searches: {selectedQuery}
                       </h2>
                       <div className="flex gap-2 flex-wrap">
@@ -560,7 +564,19 @@ export default function App() {
                       showAll={true}
                     />
                   ) : (
-                    <div className="text-white text-xl mt-16"></div>
+                    <div className="mt-20 flex justify-center">
+                      <div className="bg-[#F5EDE3] text-[#3E3232] font-serif text-lg px-6 py-4 rounded-lg shadow-lg border border-[#8E7965] max-w-xl text-center">
+                        <p className="mb-2">
+                          Please <span className="font-bold">sign in</span> to
+                          see your liked papers and receive personalized
+                          recommendations.
+                        </p>
+                        <p className="text-sm text-[#6B4F4F]">
+                          Create sessions, track your preferences, and unlock
+                          tailored results.
+                        </p>
+                      </div>
+                    </div>
                   )
                 }
               />
@@ -576,8 +592,18 @@ export default function App() {
                       showAll={true}
                     />
                   ) : (
-                    <div className="text-white text-xl mt-16">
-                      Please sign in to see liked or disliked papers
+                    <div className="mt-20 flex justify-center">
+                      <div className="bg-[#F5EDE3] text-[#3E3232] font-serif text-lg px-6 py-4 rounded-lg shadow-lg border border-[#8E7965] max-w-xl text-center">
+                        <p className="mb-2">
+                          Please <span className="font-bold">sign in</span> to
+                          see your hidden papers and receive personalized
+                          recommendations.
+                        </p>
+                        <p className="text-sm text-[#6B4F4F]">
+                          Create sessions, track your preferences, and unlock
+                          tailored results.
+                        </p>
+                      </div>
                     </div>
                   )
                 }

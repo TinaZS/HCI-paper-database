@@ -31,10 +31,10 @@ export default function Header() {
       <div>
         {user ? (
           <div className="flex items-center gap-4">
-            <span className="text-[#3E3232]">Signed in as {user.email}</span>
+            <span className="text-[#E6DAC6]">Signed in as {user.email}</span>
             <button
               onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+              className="bg-[#A63A3A] text-white font-serif px-5 py-2 rounded-md shadow hover:bg-[#872C2C] transition duration-200"
             >
               Logout
             </button>
@@ -42,7 +42,7 @@ export default function Header() {
         ) : (
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            className="bg-[#B8A290] text-[#3E3232] font-serif px-5 py-2 rounded-md shadow hover:bg-[#A68C7C] transition duration-200"
           >
             Sign In
           </button>
