@@ -15,14 +15,14 @@ export default function Header() {
 
   return (
     <header className="w-full py-4 px-6 flex justify-between items-center">
-      <nav className="flex space-x-6 text-lg font-serif">
-        <a href="/" className="text-[#EDE0D4] hover:underline">
+      <nav className="ml-12 flex space-x-6 text-lg font-serif">
+        <a href="/" className="text-[#3E3232] hover:underline">
           Home
         </a>
-        <a href="/saved" className="text-[#EDE0D4] hover:underline">
+        <a href="/saved" className="text-[#3E3232] hover:underline">
           Liked Papers
         </a>
-        <a href="/disliked" className="text-[#EDE0D4] hover:underline">
+        <a href="/disliked" className="text-[#3E3232] hover:underline">
           Hidden Papers
         </a>
       </nav>
@@ -31,7 +31,7 @@ export default function Header() {
       <div>
         {user ? (
           <div className="flex items-center gap-4">
-            <span className="text-gray-700">Signed in as {user.email}</span>
+            <span className="text-[#3E3232]">Signed in as {user.email}</span>
             <button
               onClick={handleLogout}
               className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"

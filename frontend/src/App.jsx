@@ -241,6 +241,54 @@ export default function App() {
     }
   }
 
+  const deleteSession = async (sessionName) => {
+    setConfirmDelete(null);
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
+      const response = await fetch(`${API_BASE_URL}/delete-session`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          session_name: sessionName,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Delete failed:", result.error);
+        return;
+      }
+
+      console.log("✅ Deleted:", result);
+      const updatedSessions = sessions.filter((s) => s !== sessionName);
+      setSessions(updatedSessions);
+
+      if (activeSession === sessionName) {
+        const newActive =
+          updatedSessions.length > 0 ? updatedSessions[0] : null;
+        setActiveSession(newActive);
+        localStorage.setItem("activeSession", newActive);
+      }
+
+      setShowPopup(null);
+    } catch (error) {
+      console.error("Error deleting session:", error);
+    }
+  };
+
+  const confirmDeletion = () => {
+    if (confirmDelete) {
+      deleteSession(confirmDelete);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Hamburger Menu (visible when sidebar is hidden) */}
@@ -356,7 +404,10 @@ export default function App() {
                         </button>
                         <button
                           className="text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          onClick={() => deleteSession(session)}
+                          onClick={() => {
+                            setShowPopup(null); // close popup
+                            setConfirmDelete(session); // open confirmation modal
+                          }}
                         >
                           Delete Session
                         </button>

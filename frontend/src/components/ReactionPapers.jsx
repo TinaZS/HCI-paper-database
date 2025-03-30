@@ -84,7 +84,10 @@ export default function ReactionPapers({
 
   return (
     <div className="p-6 flex flex-col items-center">
-      <h2 className="text-2xl font-bold mb-4 text-center">
+      <h2
+        className="text-[#3E3232] text-2xl font-bold mb-4 text-center"
+        style={{ fontFamily: "Gloock", color: "#D5C7AC" }}
+      >
         {reactionType === "like" ? "Your Liked Papers" : "Your Disliked Papers"}
       </h2>
 

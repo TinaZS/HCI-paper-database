@@ -45,7 +45,10 @@ export default function ReactionButton({
   return (
     <div className="flex gap-3 items-center absolute bottom-2 right-2">
       <button
-        onClick={() => handleReaction("like")}
+        onClick={(e) => {
+          e.stopPropagation(); // ⛔ Prevent card click
+          handleReaction("like");
+        }}
         className="focus:outline-none"
       >
         <HeartIcon
@@ -54,8 +57,12 @@ export default function ReactionButton({
           }`}
         />
       </button>
+
       <button
-        onClick={() => handleReaction("dislike")}
+        onClick={(e) => {
+          e.stopPropagation(); // ⛔ Prevent card click
+          handleReaction("dislike");
+        }}
         className="focus:outline-none"
       >
         <HandThumbDownIcon
