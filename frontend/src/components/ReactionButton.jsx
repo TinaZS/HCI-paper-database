@@ -11,6 +11,7 @@ export default function ReactionButton({
   const [reaction, setReaction] = useState(initialReaction || null); // 'like' | 'dislike' | null
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+  const [showTooltip, setShowTooltip] = useState(null); // "like" | "dislike" | null
 
   const handleReaction = async (reactionType) => {
     if (!token) return;
@@ -44,6 +45,12 @@ export default function ReactionButton({
 
   return (
     <div className="flex gap-3 items-center absolute bottom-2 right-2">
+      {/* Like Button */}
+      <div
+        className="relative"
+        onMouseEnter={() => !token && setShowTooltip("like")}
+        onMouseLeave={() => setShowTooltip(null)}
+      >
       <button
         onClick={(e) => {
           e.stopPropagation(); // ⛔ Prevent card click
@@ -57,7 +64,19 @@ export default function ReactionButton({
           }`}
         />
       </button>
-
+      {showTooltip === "like" && (
+           <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-40 bg-black text-white text-xs text-center rounded-md px-3 py-1 shadow-lg z-50">
+            You must be logged in to like a paper
+          </div>
+        )}
+      </div>
+      
+      {/* Dislike Button */}
+      <div
+        className="relative"
+        onMouseEnter={() => !token && setShowTooltip("dislike")}
+        onMouseLeave={() => setShowTooltip(null)}
+      >
       <button
         onClick={(e) => {
           e.stopPropagation(); // ⛔ Prevent card click
@@ -71,6 +90,12 @@ export default function ReactionButton({
           }`}
         />
       </button>
+      {showTooltip === "dislike" && (
+           <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-40 bg-black text-white text-xs text-center rounded-md px-3 py-1 shadow-lg z-50">
+            You must be logged in to dislike a paper
+          </div>
+        )}
+      </div>
     </div>
   );
 }
