@@ -102,21 +102,37 @@ export default function ReactionPapers({
       )}
 
       {!token ? (
-        <p className="text-red-500 font-semibold text-center">
-          Only signed-in users can view {reactionType} papers. Please log in.
-        </p>
+        <div className="bg-[#FBEAEA] border border-[#A63A3A] text-[#A63A3A] px-6 py-4 rounded-lg text-center font-serif shadow-md max-w-xl mx-auto mt-10">
+          <p className="text-lg font-semibold mb-2">
+            Only signed-in users can view {reactionType} papers.
+          </p>
+          <p className="text-sm">
+            Please log in to access your saved or hidden papers.
+          </p>
+        </div>
       ) : loading ? (
-        <p className="text-gray-500 text-center">
+        <div className="text-center text-[#5C4033] italic mt-6 font-serif">
           Loading {reactionType} papers...
-        </p>
+        </div>
       ) : filteredPapers.length === 0 ? (
-        <p className="text-gray-500 text-center">
-          {searchQuery
-            ? `No matching ${reactionType} papers found.`
-            : `You haven’t ${reactionType}d any papers yet.`}
-        </p>
+        <div className="bg-[#F5EDE3] border border-[#8B6C42] text-[#3E3232] px-6 py-6 rounded-xl text-center shadow-md font-serif max-w-xl mx-auto mt-10">
+          <p className="text-lg font-semibold mb-2">
+            You haven’t {reactionType}d any papers yet.
+          </p>
+          <p className="text-sm mb-4">
+            Try exploring the homepage and click the{" "}
+            <span className="text-red-500 font-bold">♥</span> or{" "}
+            <span className="text-gray-600 font-bold">👎</span> icons to curate
+            your research!
+          </p>
+          <a
+            href="/"
+            className="inline-block mt-2 bg-[#B8A290] hover:bg-[#A68C7C] text-white font-medium px-4 py-2 rounded-md transition"
+          >
+            Browse Papers
+          </a>
+        </div>
       ) : (
-        // ✅ Smooth fade-in when results load
         <motion.div
           key={`${reactionType}-results`}
           initial={{ opacity: 0 }}
