@@ -239,8 +239,8 @@ def get_papers_by_reaction():
                 "abstract": row["new_papers"].get("abstract", "No abstract available"),
                 "datePublished": row["new_papers"].get("published_date", "Unknown"),
                 "link": row["new_papers"]["link"],
-                "categories": row["new_papers"]["categories"]#,
-                #"embedding": row["new_papers"]["embedding"]
+                "categories": row["new_papers"]["categories"],
+                "embedding": row["new_papers"]["embedding"]
             }
             for row in response.data
         ]
