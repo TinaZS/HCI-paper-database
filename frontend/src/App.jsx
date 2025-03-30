@@ -140,6 +140,15 @@ export default function App() {
 
     try {
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      console.log("🌍 Frontend Origin:", window.location.origin);
+      console.log("📡 Backend API Base URL:", API_BASE_URL);
+      console.log("📬 Sending POST to:", `${API_BASE_URL}/create-session`);
+      console.log("🔐 Auth Token:", token?.slice(0, 20) + "..."); // Don't print full token in prod!
+      console.log("📦 Payload:", {
+        user_id: userId,
+        session_name: newSessionName,
+      });
+
       const response = await fetch(`${API_BASE_URL}/create-session`, {
         method: "POST",
         headers: {
@@ -199,6 +208,9 @@ export default function App() {
       if (token && token !== "undefined" && token !== "null") {
         headers["Authorization"] = `Bearer ${token}`;
       }
+
+      console.log("🌍 Frontend Origin:", window.location.origin);
+      console.log("📡 Backend API Base URL:", API_BASE_URL);
 
       const response = await fetch(`${API_BASE_URL}/search`, {
         method: "POST",
