@@ -164,7 +164,6 @@ export default function App() {
   const handleSessionChange = (session) => {
     setActiveSession(session);
     localStorage.setItem("activeSession", session);
-    window.location.reload();
   };
 
   async function handleSearch(
@@ -190,7 +189,14 @@ export default function App() {
       const headers = {
         "Content-Type": "application/json",
       };
-      if (token) {
+
+      console.log("🧠 Raw token:", token);
+      console.log(
+        "✅ Final token being sent?",
+        token && token !== "undefined" && token !== "null"
+      );
+
+      if (token && token !== "undefined" && token !== "null") {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
@@ -268,8 +274,7 @@ export default function App() {
           sidebarVisible ? "translate-x-0" : "-translate-x-full"
         } fixed top-0 left-0 z-10`}
       >
-        {/* Sidebar Content - White background with full height */}
-        <div className="bg-white h-full flex flex-col w-full border-r">
+        <div className="bg-[#F5EDE3] text-[#3E3232] font-serif h-full flex flex-col w-full border-r border-[#8E7965]">
           <div className="p-4 flex justify-between items-center border-b">
             <h2 className="text-lg font-bold">User Sessions</h2>
             <button
@@ -301,8 +306,10 @@ export default function App() {
                 {sessions.map((session) => (
                   <li
                     key={session}
-                    className={`cursor-pointer p-2 rounded-md flex justify-between items-center ${
-                      activeSession === session ? "bg-blue-100" : ""
+                    className={`cursor-pointer px-3 py-2 rounded-md flex justify-between items-center transition-colors ${
+                      activeSession === session
+                        ? "bg-[#D5C7AC] text-[#3E3232] font-semibold"
+                        : "hover:bg-[#E8DDD2]"
                     }`}
                     onClick={() => handleSessionChange(session)}
                     style={{ position: "relative" }}
@@ -359,7 +366,7 @@ export default function App() {
                 ))}
               </ul>
             ) : (
-              <p>Please log in to view your sessions.</p>
+              <p> Sign in to add research sessions</p>
             )}
           </div>
 
@@ -376,7 +383,7 @@ export default function App() {
                   onKeyDown={(e) => e.key === "Enter" && createNewSession()}
                 />
                 <button
-                  className="w-full px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  className="w-full px-3 py-2 bg-[#B8A290] text-white rounded-md hover:bg-[#A68C7C]"
                   onClick={createNewSession}
                 >
                   + Add
@@ -501,9 +508,7 @@ export default function App() {
                       session_name={activeSession}
                     />
                   ) : (
-                    <div className="text-white text-xl mt-16">
-                      Please sign in
-                    </div>
+                    <div className="text-white text-xl mt-16"></div>
                   )
                 }
               />
@@ -519,7 +524,7 @@ export default function App() {
                     />
                   ) : (
                     <div className="text-white text-xl mt-16">
-                      Please sign in
+                      Please sign in to see liked or disliked papers
                     </div>
                   )
                 }

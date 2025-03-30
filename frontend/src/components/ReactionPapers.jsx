@@ -25,7 +25,7 @@ export default function ReactionPapers({
   // ✅ Fetch only once if data not already loaded
   useEffect(() => {
     async function fetchReactionPapers() {
-      if (!token || !session_name || papers.length > 0) return;
+      if (!token || !session_name) return;
 
       setLoading(true);
       try {
@@ -56,8 +56,11 @@ export default function ReactionPapers({
       setLoading(false);
     }
 
+    // 🧼 Clear old papers while new ones load
+    setPapers([]);
+    setFilteredPapers([]);
     fetchReactionPapers();
-  }, [token, session_name, papers.length, reactionType]);
+  }, [token, session_name, reactionType]);
 
   // ✅ Debounced search filter
   useEffect(() => {

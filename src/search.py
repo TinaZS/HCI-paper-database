@@ -52,59 +52,48 @@ def search(query, index, k=6, embedState=False,topic="",user_id=""):
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
     print(f"Timestamp at start of inner search function: {first_timestamp}")
 
-    # Query Supabase filtering by reaction type
-    response = (
-        supabase
-        .table("likes")  # This table stores likes and dislikes
-        .select("paper_id, reaction_type,created_at, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
-        .eq("user_id", user_id)
-        .eq("reaction_type", "like")  # Filter only for like/dislike
-        .execute()
-    )
-    
+    # 🚫 Skip personalization for guest users
+    if user_id:
+        print("🔐 Logged-in user – attempting to personalize")
 
-    #if not response or not hasattr(response, "data"):
-        #print(f"Supabase response issue for {reaction_type}:", response)
-        #return jsonify({"papers": []}), 200
-    
-    if response.data is None:
+        response = (
+            supabase
+            .table("likes")
+            .select("paper_id, reaction_type,created_at, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
+            .eq("user_id", user_id)
+            .eq("reaction_type", "like")
+            .execute()
+        )
 
-        # Extract full paper details
-        papers = [
-            {
-                "paper_id": row["paper_id"],
-                "created_at": row["created_at"],
-                "embedding": row["new_papers"]["embedding"]
-            }
-            for row in response.data
-        ]
+        if response.data:
+            print(f"✅ {len(response.data)} liked papers found for user {user_id}")
+            papers = [
+                {
+                    "paper_id": row["paper_id"],
+                    "created_at": row["created_at"],
+                    "embedding": row["new_papers"]["embedding"]
+                }
+                for row in response.data
+            ]
 
-        #print(f"User {user_id} {reaction_type}d papers:", papers)
+            user_profile_embeddings = construct_user_profile(papers)
 
-        print(papers[0])
+            if not embedState:
+                query_embedding = get_openai_embedding(query)
+            else:
+                query_embedding = np.array(query).reshape(1, -1)
 
-        user_profile_embeddings=construct_user_profile(papers)
+            # ✨ Blend current query and user profile
+            query_factor = 0.9
+            historical_factor = 0.1
+            query_embedding = query_factor * query_embedding + historical_factor * user_profile_embeddings
 
-
-        if embedState==False:
-            query_embedding = get_openai_embedding(query)
         else:
-            query_embedding = np.array(query).reshape(1,-1)
-            print(query_embedding.shape)
-
-
-        query_factor=0.9
-        historical_factor=0.1
-
-        query_embedding=query_factor*query_embedding+historical_factor*user_profile_embeddings
-    
+            print("⚠️ No liked papers for personalization. Falling back to regular search.")
+            query_embedding = get_openai_embedding(query) if not embedState else np.array(query).reshape(1, -1)
     else:
-
-        if embedState==False:
-            query_embedding = get_openai_embedding(query)
-        else:
-            query_embedding = np.array(query).reshape(1,-1)
-            print(query_embedding.shape)
+        print("🙈 Guest user: skipping personalization.")
+        query_embedding = get_openai_embedding(query) if not embedState else np.array(query).reshape(1, -1)
 
     #return None
 

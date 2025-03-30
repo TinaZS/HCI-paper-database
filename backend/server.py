@@ -66,6 +66,7 @@ else:
 
 @app.route("/search", methods=["POST"])
 def search():
+    print("🔍 /search endpoint hit!")  # <-- Add this
 
     first_time=time.time()
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
@@ -85,18 +86,17 @@ def search():
 
 
     auth_header = request.headers.get("Authorization")
-    user_id = None  # Default to None for guests
+    user_id = None  # Default to guest
 
-    if auth_header:
+    if auth_header and "Bearer" in auth_header:
         try:
             token = auth_header.split(" ")[1]
             user = supabase.auth.get_user(token)
-            user_id = user.user.id
-            print("Authenticated user ID is", user_id)
+            user_id = user.user.id if user and hasattr(user, "user") else None
+            print("✅ Authenticated user ID:", user_id)
         except Exception as e:
-            print("Warning: invalid or expired token. Proceeding anonymously.")
-    else:
-        print("No token provided. Proceeding as guest.")
+            print("⚠️ Invalid or expired token. Proceeding as guest.")
+
 
 
 
