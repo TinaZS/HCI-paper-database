@@ -49,11 +49,12 @@ export default function QueryInput({
       </form>
       <div className="flex gap-3 mt-4">
         <div className="flex-1">
-          <label className="block text-lg font-semibold text-[#E6DAC6] mb-2">
+          <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
             Select Category:
           </label>
+
           <select
-            className="w-full p-3 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+            className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
             value={selectedCategory}
             onChange={(e) => {
               onCategoryChange(e.target.value);
@@ -78,11 +79,11 @@ export default function QueryInput({
         {/* Select Topic */}
         {selectedCategory && (
           <div className="flex-1">
-            <label className="block text-lg font-semibold text-[#E6DAC6] mb-2">
+            <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
               Select Topic:
             </label>
             <select
-              className="w-full p-3 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+              className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
               value={selectedQuery}
               onChange={(e) => onQueryChange(e.target.value)}
             >

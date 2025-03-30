@@ -204,39 +204,42 @@ function Modal({ paper, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 relative"
+        className="bg-[#F5EDE3] text-[#3E3232] font-serif rounded-xl shadow-lg max-w-2xl w-full p-8 relative max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+          className="absolute top-4 right-4 text-[#3E3232] text-xl hover:text-red-600"
         >
           ✖
         </button>
-        <h2 className="text-xl font-bold">{paper.title}</h2>
+
+        <h2 className="text-2xl font-bold mb-2">{paper.title}</h2>
 
         {paper.similarity_score !== undefined && (
-          <p className="text-sm italic text-gray-600">
-            Score: {paper.similarity_score}
+          <p className="text-sm italic mb-1">
+            <strong>Score:</strong> {paper.similarity_score}
           </p>
         )}
 
         {paper.authors && (
-          <p className="text-sm italic text-gray-600">
-            {paper.authors.join(", ")}
-          </p>
+          <p className="text-sm italic mb-1">{paper.authors.join(", ")}</p>
         )}
-        <p className="text-sm italic text-gray-600">
+
+        <p className="text-sm italic mb-4">
           Published: {new Date(paper.datePublished).toLocaleDateString("en-US")}
         </p>
-        <p className="mt-2 text-gray-700">{paper.abstract}</p>
+
+        <p className="text-md leading-relaxed mb-4 whitespace-pre-wrap">
+          {paper.abstract}
+        </p>
 
         {paper.categories && (
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 mb-4">
             {paper.categories.map((category, index) => (
               <div
                 key={index}
@@ -244,11 +247,11 @@ function Modal({ paper, onClose }) {
                 onMouseEnter={() => setHoveredCategory(category)}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
-                <span className="bg-blue-500 text-white text-sm px-3 py-1 rounded-full cursor-pointer">
+                <span className="bg-[#B8A290] text-[#3E3232] text-sm px-3 py-1 rounded-full cursor-pointer">
                   {category}
                 </span>
                 {hoveredCategory === category && (
-                  <div className="absolute left-1/2 transform -translate-x-1/2 -top-8 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="absolute left-1/2 transform -translate-x-1/2 -top-8 bg-[#3E3232] text-[#F5EDE3] text-xs px-2 py-1 rounded shadow-lg opacity-100 transition-opacity duration-200 whitespace-nowrap">
                     {categoryMap[category] || "Unknown Category"}
                   </div>
                 )}
@@ -261,7 +264,7 @@ function Modal({ paper, onClose }) {
           href={paper.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-500 underline mt-4 inline-block"
+          className="text-[#00234B] hover:underline text-sm"
         >
           Read More →
         </a>
