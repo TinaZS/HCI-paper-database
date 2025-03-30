@@ -504,23 +504,9 @@ export default function App() {
                       selectedQuery={selectedQuery}
                       onCategoryChange={setSelectedCategory}
                       onQueryChange={setSelectedQuery}
+                      sortBy={sortBy}
+                      setSortBy={setSortBy}
                     />
-
-                    {/* Sort dropdown */}
-                    <div className="mt-6">
-                      <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
-                        Sort by:
-                      </label>
-
-                      <select
-                        className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                      >
-                        <option value="score">Score (highest first)</option>
-                        <option value="date">Date (newest first)</option>
-                      </select>
-                    </div>
 
                     {/* Suggested Queries */}
                     <div className="mt-6">

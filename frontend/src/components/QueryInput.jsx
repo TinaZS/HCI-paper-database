@@ -7,6 +7,8 @@ export default function QueryInput({
   selectedQuery,
   onCategoryChange,
   onQueryChange,
+  sortBy,
+  setSortBy,
 }) {
   const [query, setQuery] = useState("");
   const [numPapers, setNumPapers] = useState("6");
@@ -47,12 +49,12 @@ export default function QueryInput({
           Search
         </button>
       </form>
-      <div className="flex gap-3 mt-4">
-        <div className="flex-1">
+      <div className="flex flex-wrap md:flex-nowrap gap-4 mt-4 w-full">
+        {/* Select Category */}
+        <div className="flex-1 min-w-[200px]">
           <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
             Select Category:
           </label>
-
           <select
             className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
             value={selectedCategory}
@@ -65,11 +67,7 @@ export default function QueryInput({
               Choose a category...
             </option>
             {Object.keys(categories).map((category) => (
-              <option
-                key={category}
-                value={category}
-                className="text-[#4A2C2A]"
-              >
+              <option key={category} value={category}>
                 {category}
               </option>
             ))}
@@ -78,7 +76,7 @@ export default function QueryInput({
 
         {/* Select Topic */}
         {selectedCategory && (
-          <div className="flex-1">
+          <div className="flex-1 min-w-[200px]">
             <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
               Select Topic:
             </label>
@@ -92,7 +90,7 @@ export default function QueryInput({
               </option>
               {Object.entries(categories[selectedCategory]).map(
                 ([key, value]) => (
-                  <option key={key} value={key} className="text-[#4A2C2A]">
+                  <option key={key} value={key}>
                     {`${key} - ${value}`}
                   </option>
                 )
@@ -100,6 +98,21 @@ export default function QueryInput({
             </select>
           </div>
         )}
+
+        {/* Sort By */}
+        <div className="w-full md:w-[220px]">
+          <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
+            Sort by:
+          </label>
+          <select
+            className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="score">Score (highest first)</option>
+            <option value="date">Date (newest first)</option>
+          </select>
+        </div>
       </div>
     </>
   );
