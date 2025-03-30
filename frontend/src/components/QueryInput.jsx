@@ -38,9 +38,7 @@ export default function QueryInput({
             type="button"
             onClick={() => setQuery("")}
             className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-black"
-          >
-            ✕
-          </button>
+          ></button>
         )}
         <button
           type="submit"

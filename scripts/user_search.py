@@ -16,6 +16,8 @@ def user_search(query, index, numPapers,embedState,topic,user_id):
         return []  
     
     print(f"Using preloaded FAISS index. Total vectors: {index.ntotal}") 
+    print(f"User ID is: {user_id if user_id else 'Guest'}")
+
 
     start_time = time.time()  # Start timing for search
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"

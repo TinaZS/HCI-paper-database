@@ -2,23 +2,33 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext";
 import DisplayResults from "./DisplayResults";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
-export default function ReactionPapers({ reactionType, onSearch, session_name, showAll }) {
+export default function ReactionPapers({
+  reactionType,
+  onSearch,
+  session_name,
+  showAll,
+}) {
   const { token } = useAuth();
   const [papers, setPapers] = useState([]);
   const [filteredPapers, setFilteredPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  //console.log("Calling from reactionpapers, session is ",session_name)
 
+  console.log("🔁 RENDER: ReactionPapers", {
+    reactionType,
+    session_name,
+    papersLength: papers.length,
+  });
 
+  // ✅ Fetch only once if data not already loaded
   useEffect(() => {
     async function fetchReactionPapers() {
-      if (!token) return;
+      if (!token || !session_name) return;
 
       setLoading(true);
-
       try {
         const response = await fetch(
           `${
@@ -44,26 +54,33 @@ export default function ReactionPapers({ reactionType, onSearch, session_name, s
       } catch (error) {
         console.error(`Error fetching ${reactionType} papers:`, error);
       }
-
       setLoading(false);
     }
 
+    // 🧼 Clear old papers while new ones load
+    setPapers([]);
+    setFilteredPapers([]);
     fetchReactionPapers();
-  }, [token, reactionType,session_name]); // ✅ React to changes in reactionType
+  }, [token, session_name, reactionType]);
 
+  // ✅ Debounced search filter
   useEffect(() => {
-    const lowerQuery = searchQuery.toLowerCase();
-    const filtered = papers.filter(
-      (paper) =>
-        paper.title.toLowerCase().includes(lowerQuery) ||
-        paper.abstract.toLowerCase().includes(lowerQuery) ||
-        (paper.authors &&
-          paper.authors.join(", ").toLowerCase().includes(lowerQuery)) ||
-        (paper.categories &&
-          paper.categories.join(", ").toLowerCase().includes(lowerQuery))
-    );
-    setFilteredPapers(filtered);
-  }, [searchQuery, papers, session_name]);
+    const timeout = setTimeout(() => {
+      const lowerQuery = searchQuery.toLowerCase();
+      const filtered = papers.filter(
+        (paper) =>
+          paper.title.toLowerCase().includes(lowerQuery) ||
+          paper.abstract.toLowerCase().includes(lowerQuery) ||
+          (paper.authors &&
+            paper.authors.join(", ").toLowerCase().includes(lowerQuery)) ||
+          (paper.categories &&
+            paper.categories.join(", ").toLowerCase().includes(lowerQuery))
+      );
+      setFilteredPapers(filtered);
+    }, 120); // Short debounce
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery, papers]);
 
   return (
     <div className="p-6 flex flex-col items-center">
@@ -80,7 +97,7 @@ export default function ReactionPapers({ reactionType, onSearch, session_name, s
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       )}
-      
+
       {!token ? (
         <p className="text-red-500 font-semibold text-center">
           Only signed-in users can view {reactionType} papers. Please log in.
@@ -96,14 +113,26 @@ export default function ReactionPapers({ reactionType, onSearch, session_name, s
             : `You haven’t ${reactionType}d any papers yet.`}
         </p>
       ) : (
-        <DisplayResults
-          results={filteredPapers}
-          onSearch={(embedding) => {
-            onSearch(embedding, 6, true);
-            navigate("/");}}
-          session_name={session_name}
-          showAll={true}
-        />
+        // ✅ Smooth fade-in when results load
+        <motion.div
+          key={`${reactionType}-results`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="w-full"
+        >
+          <DisplayResults
+            results={filteredPapers}
+            onSearch={(embedding) => {
+              onSearch(embedding, 6, true);
+              navigate("/");
+            }}
+            session_name={session_name}
+            showAll={true}
+            reactionType={reactionType}
+          />
+        </motion.div>
       )}
     </div>
   );
