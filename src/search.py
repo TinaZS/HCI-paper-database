@@ -92,7 +92,7 @@ def search(query, index, k=6, embedState=False,topic="",user_id=""):
             print("⚠️ No liked papers for personalization. Falling back to regular search.")
             query_embedding = get_openai_embedding(query) if not embedState else np.array(query).reshape(1, -1)
     else:
-        print("🙈 Guest user: skipping personalization.")
+        print("Guest user: skipping personalization.")
         query_embedding = get_openai_embedding(query) if not embedState else np.array(query).reshape(1, -1)
 
     #return None

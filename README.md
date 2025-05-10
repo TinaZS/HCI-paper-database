@@ -3,7 +3,8 @@
 # Install Backend
 
 pip install -r requirements.txt
-python backend/server.py # Run backend
+python backend/server.py # Run backend, or run the following
+./venv/bin/python backend/server.py
 
 # Install Frontend
 

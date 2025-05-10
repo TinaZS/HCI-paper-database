@@ -9,6 +9,7 @@ import categoriesData from "./components/categories.json";
 import ReactionPapers from "./components/ReactionPapers";
 import { useAuth } from "./AuthContext";
 import { supabase } from "./supabaseClient";
+import OnboardingModal from "./components/OnboardingModal";
 
 export default function App() {
   const [results, setResults] = useState([]);
@@ -304,6 +305,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Hamburger Menu (visible when sidebar is hidden) */}
+      <OnboardingModal />
       {!sidebarVisible && (
         <button
           onClick={() => setSidebarVisible(true)}
