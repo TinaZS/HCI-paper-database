@@ -1,4 +1,7 @@
 import time
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.fetch import fetch_arxiv_data
 from src.parse import parse_arxiv_data
 from src.generate_and_store_embeddings import generate_and_store_embeddings
@@ -8,7 +11,7 @@ from src.scrape_CS import get_category_size
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 
 def update_database():
@@ -20,7 +23,7 @@ def update_database():
     else:
         print("No need to rebuild FAISS from Supabase")
 
-    category_dict = {"cs.HC": 0}
+    category_dict = {"cs.HC": 0,"cs.AI":0}
     #CS AI
 
     # Get category size
@@ -32,9 +35,9 @@ def update_database():
     pull_size = 100  # Ensures Supabase query does not exceed limit
 
     for key, max_pulls in category_dict.items():
-        counter = 0
+        counter = 5500
 
-        while counter < 500:
+        while counter < 25000:
             xml_data = fetch_arxiv_data(key, pull_size, counter)
 
             if not xml_data:
