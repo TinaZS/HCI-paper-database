@@ -1,5 +1,7 @@
 import xml.etree.ElementTree as ET
 from supabase_client import supabase
+import json
+
 
 def parse_arxiv_data(xml_data):
     """
