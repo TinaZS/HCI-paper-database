@@ -29,41 +29,43 @@ export default function QueryInput({
       >
         <input
           type="text"
-          placeholder="Enter your search query..."
+          placeholder="Search for a paper..."
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="w-full p-4 border border-[#8B6C42] bg-[#E6DAC6] text-[#2D2C2A] placeholder-[#5C4033] rounded-full shadow-md focus:ring-2 focus:ring-[#4A2C2A] outline-none"
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full px-5 py-3 rounded-full border border-[#C8A2F7] text-[#4F106E] bg-white placeholder:text-[#B083D6] focus:outline-none focus:ring-2 focus:ring-[#C8A2F7] transition"
         />
-        {/* Clear Button */}
         {query && (
           <button
             type="button"
             onClick={() => setQuery("")}
-            className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-black"
-          ></button>
+            className="absolute right-20 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black"
+          >
+            ✕
+          </button>
         )}
         <button
           type="submit"
-          className="px-6 py-3 bg-[#5C4033] text-[#E6DAC6] border border-[#4A2C2A] rounded-full hover:bg-[#4A2C2A] transition duration-200 font-serif"
+          className="px-6 py-2 rounded-full bg-[#A78BFA] text-white font-medium hover:bg-[#8B5CF6] transition"
         >
           Search
         </button>
       </form>
+
       <div className="flex flex-wrap md:flex-nowrap gap-4 mt-4 w-full">
-        {/* Select Category */}
+        {/* Category */}
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
-            Select Category:
+          <label className="block text-lg font-semibold text-[#AB43BD] mb-1">
+            Select Category
           </label>
           <select
-            className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+            className="w-full px-4 py-2 rounded-lg bg-white border border-[#D0BAF7] text-[#4F106E] focus:ring-2 focus:ring-[#C8A2F7]"
             value={selectedCategory}
             onChange={(e) => {
               onCategoryChange(e.target.value);
               onQueryChange("");
             }}
           >
-            <option value="" disabled className="text-[#5C4033]">
+            <option value="" disabled className="text-gray-400">
               Choose a category...
             </option>
             {Object.keys(categories).map((category) => (
@@ -74,18 +76,18 @@ export default function QueryInput({
           </select>
         </div>
 
-        {/* Select Topic */}
+        {/* Topic */}
         {selectedCategory && (
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
-              Select Topic:
+            <label className="block text-lg font-semibold text-[#AB43BD] mb-1">
+              Select Topic
             </label>
             <select
-              className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+              className="w-full px-4 py-2 rounded-lg bg-white border border-[#D0BAF7] text-[#4F106E] focus:ring-2 focus:ring-[#C8A2F7]"
               value={selectedQuery}
               onChange={(e) => onQueryChange(e.target.value)}
             >
-              <option value="" disabled className="text-[#5C4033]">
+              <option value="" disabled className="text-gray-400">
                 Choose a topic...
               </option>
               {Object.entries(categories[selectedCategory]).map(
@@ -99,13 +101,13 @@ export default function QueryInput({
           </div>
         )}
 
-        {/* Sort By */}
+        {/* Sort */}
         <div className="w-full md:w-[220px]">
-          <label className="block text-lg font-serif font-semibold text-[#E6DAC6] mb-1">
-            Sort by:
+          <label className="block text-lg font-semibold text-[#AB43BD] mb-1">
+            Sort by
           </label>
           <select
-            className="w-full px-3 py-2 border border-[#8B6C42] rounded-md bg-[#E6DAC6] text-[#2D2C2A] text-sm focus:outline-none focus:ring-2 focus:ring-[#4A2C2A] transition duration-150 shadow-sm"
+            className="w-full px-4 py-2 rounded-lg bg-white border border-[#D0BAF7] text-[#4F106E] focus:ring-2 focus:ring-[#C8A2F7]"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
