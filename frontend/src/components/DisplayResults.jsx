@@ -169,7 +169,7 @@ export default function DisplayResults({
                     e.stopPropagation();
                     onSearch(paper.embedding, 6, true);
                   }}
-                  className="mt-3 py-1.5 px-3 text-sm bg-[#998CC8] text-white hover:bg-[#4F106E] font-medium rounded-md shadow hover:bg-[#A27D5C] transition duration-150"
+                  className="mt-3 py-1.5 px-3 text-sm bg-[#998CC8] text-white hover:bg-[#714ea6] font-medium rounded-md shadow hover:bg-[#A27D5C] transition duration-150"
                 >
                   Find Similar Papers
                 </button>
