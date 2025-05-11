@@ -4,6 +4,7 @@ dist/
 .vite/
 .vscode/
 .env.local
+.env.production
 .DS_Store
 
 #Backend
