@@ -1,8 +1,4 @@
-from src.load_index import load_index
 from src.search import search
-from src.rebuild_faiss import needs_rebuild, rebuild_faiss
-import sys
-import os
 import time
 
 

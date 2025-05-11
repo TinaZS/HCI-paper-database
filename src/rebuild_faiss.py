@@ -114,4 +114,6 @@ def rebuild_faiss(quantize=False):
         print(f"Index contains {index.ntotal} embeddings")
 
 
-rebuild_faiss()
+# if __name__ == "__main__":
+#     rebuild_faiss()
+
