@@ -17,12 +17,6 @@ import os
 def update_database():
     """Fetch new data from arXiv, update embeddings, and rebuild FAISS if needed."""
 
-    if needs_rebuild():
-        print("Rebuilding FAISS before proceeding...")
-        rebuild_faiss()
-    else:
-        print("No need to rebuild FAISS from Supabase")
-
     category_dict = {"cs.HC": 0,"cs.AI":0}
     #CS AI
 
@@ -51,6 +45,12 @@ def update_database():
             counter += pull_size
 
     print("Database update complete.")
+
+    if needs_rebuild():
+        print("Rebuilding FAISS before proceeding...")
+        rebuild_faiss()
+    else:
+        print("No need to rebuild FAISS from Supabase")
 
 if __name__ == "__main__":
     update_database()
