@@ -117,26 +117,26 @@ export default function DisplayResults({
               transition={{ duration: 0.3 }}
               onClick={() => setSelectedPaper(paper)}
             >
-              <div className="p-6 border border-[#8B6C42] bg-[#F5EDE3] rounded-xl shadow-lg relative transition-all duration-300 hover:shadow-xl w-full pb-12 space-y-3 cursor-pointer">
+              <div className="p-6 border border-[#E5D0FA] bg-white/70 rounded-xl shadow-lg relative transition-all duration-300 hover:shadow-xl w-full pb-12 space-y-3 cursor-pointer">
                 <div className="flex justify-between items-start">
-                  <h3 className="font-serif text-lg font-semibold text-[#2D2C2A] leading-tight flex-1 pr-2">
+                  <h3 className="font-sans text-lg font-semibold text-[#4F106E] leading-tight flex-1 pr-2">
                     {paper.title}
                   </h3>
                   {paper.similarity_score !== undefined && (
-                    <span className="text-sm italic text-[#5C4033] whitespace-nowrap">
+                    <span className="text-sm italic text-[#AB43BD] whitespace-nowrap">
                       Score: {paper.similarity_score.toFixed(2)}
                     </span>
                   )}
                 </div>
 
                 {paper.authors && paper.authors.length > 0 && (
-                  <div className="flex justify-between text-sm italic text-[#5C4033]">
+                  <div className="flex justify-between text-sm italic text-[#998CC8]">
                     <span>{paper.authors[0]}, et al.</span>
                     <span>{formattedDate}</span>
                   </div>
                 )}
 
-                <p className="text-[#2D2C2A] text-sm leading-relaxed mt-2">
+                <p className="text-[#787391] text-sm leading-relaxed mt-2">
                   {paper.abstract.length > 200
                     ? `${paper.abstract.substring(0, 200)}...`
                     : paper.abstract}
@@ -146,7 +146,7 @@ export default function DisplayResults({
                   href={paper.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#8B6C42] underline inline-block text-sm font-medium mt-2"
+                  className="text-[#AB43BD] underline inline-block text-sm font-medium mt-2"
                 >
                   Read More →
                 </a>
@@ -156,7 +156,7 @@ export default function DisplayResults({
                     {paper.categories.map((category, index) => (
                       <span
                         key={index}
-                        className="bg-[#BFA58A] text-[#2D2C2A] text-sm px-3 py-1 rounded-full"
+                        className="bg-[#787391] text-white text-sm px-3 py-1 rounded-full"
                       >
                         {category}
                       </span>
@@ -169,7 +169,7 @@ export default function DisplayResults({
                     e.stopPropagation();
                     onSearch(paper.embedding, 6, true);
                   }}
-                  className="mt-3 py-1.5 px-3 text-sm bg-[#BFA58A] text-[#F5EDE3] font-medium rounded-md shadow hover:bg-[#A27D5C] transition duration-150"
+                  className="mt-3 py-1.5 px-3 text-sm bg-[#998CC8] text-white hover:bg-[#4F106E] font-medium rounded-md shadow hover:bg-[#A27D5C] transition duration-150"
                 >
                   Find Similar Papers
                 </button>
@@ -208,7 +208,7 @@ function Modal({ paper, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-[#F5EDE3] text-[#3E3232] font-serif rounded-xl shadow-lg max-w-2xl w-full p-8 relative max-h-[90vh] overflow-y-auto"
+        className="bg-[#F3ECFF] text-[#4F106E] font-sans rounded-2xl shadow-xl border border-[#E5D0FA] max-w-2xl w-full p-8 relative max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -247,7 +247,7 @@ function Modal({ paper, onClose }) {
                 onMouseEnter={() => setHoveredCategory(category)}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
-                <span className="bg-[#B8A290] text-[#3E3232] text-sm px-3 py-1 rounded-full cursor-pointer">
+                <span className="bg-[#787391] text-white text-sm px-3 py-1 rounded-full">
                   {category}
                 </span>
                 {hoveredCategory === category && (
@@ -264,7 +264,7 @@ function Modal({ paper, onClose }) {
           href={paper.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#00234B] hover:underline text-sm"
+          className="text-[#AB43BD] hover:underline text-sm font-medium"
         >
           Read More →
         </a>

@@ -4,16 +4,17 @@ import { supabase } from "../supabaseClient";
 export default function AuthModal({ onClose }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState(""); // ✅ Store messages (error/success)
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   function clearMessages() {
-    setMessage(""); // ✅ Clear messages when switching modes
+    setMessage("");
   }
 
   async function handleAuth() {
-    setMessage(""); // ✅ Clear previous messages before new request
+    setMessage("");
 
     if (!email.trim()) {
       setMessage("Email is required.");
@@ -21,17 +22,13 @@ export default function AuthModal({ onClose }) {
     }
 
     if (isResettingPassword) {
-      // ✅ Handle Magic Link Request
       const { error } = await supabase.auth.resetPasswordForEmail(email);
-
       if (error) {
         setMessage(error.message);
         return;
       }
 
-      setMessage(
-        "A magic login link has been sent to your email. Use it to access your account without a password."
-      );
+      setMessage("A magic login link has been sent to your email.");
       return;
     }
 
@@ -41,7 +38,11 @@ export default function AuthModal({ onClose }) {
     }
 
     if (isSigningUp) {
-      // ✅ Handle Sign Up
+      if (password !== confirmPassword) {
+        setMessage("Passwords do not match.");
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
@@ -50,10 +51,9 @@ export default function AuthModal({ onClose }) {
       }
 
       setMessage(
-        "A confirmation link has been sent to your email. If you don’t receive it, you may already have an account. Try sign in or forgot password instead."
+        "A confirmation link has been sent to your email. If you don’t receive it, you may already have an account. Try sign in instead."
       );
     } else {
-      // ✅ Handle Sign In
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -61,19 +61,19 @@ export default function AuthModal({ onClose }) {
 
       if (error) {
         setMessage(
-          "Invalid credentials. Please check your email or try the magic link."
+          "Invalid credentials. Please sign up or reset your password."
         );
         return;
       }
 
-      onClose(); // ✅ Close modal after successful login
+      onClose();
     }
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-[#F5EDE3] text-[#3E3232] font-serif p-8 rounded-xl shadow-2xl w-96">
-        <h2 className="text-xl font-semibold mb-4">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-[#f3ebfc] backdrop-blur-lg border border-[#E5D0FA] text-[#4F106E] font-sans p-8 rounded-2xl shadow-xl w-96">
+        <h2 className="text-xl font-semibold mb-5 text-center">
           {isResettingPassword
             ? "Forgot Password?"
             : isSigningUp
@@ -86,7 +86,7 @@ export default function AuthModal({ onClose }) {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-3 border border-[#8E7965] rounded-md mb-3 bg-white placeholder-gray-400"
+          className="w-full p-3 border border-[#C8A2F7] rounded-lg mb-3 bg-white placeholder-[#C8A2F7] text-[#4F106E]"
         />
 
         {!isResettingPassword && (
@@ -95,15 +95,27 @@ export default function AuthModal({ onClose }) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border border-[#8E7965] rounded-md mb-3 bg-white placeholder-gray-400"
+            className="w-full p-3 border border-[#C8A2F7] rounded-lg mb-3 bg-white placeholder-[#C8A2F7] text-[#4F106E]"
           />
         )}
 
-        {message && <p className="text-red-500 text-sm mb-2">{message}</p>}
+        {isSigningUp && !isResettingPassword && (
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full p-3 border border-[#C8A2F7] rounded-lg mb-3 bg-white placeholder-[#C8A2F7] text-[#4F106E]"
+          />
+        )}
+
+        {message && (
+          <p className="text-red-500 text-sm mb-2 text-center">{message}</p>
+        )}
 
         <button
           onClick={handleAuth}
-          className="w-full p-3 rounded-md bg-[#A68C7C] text-white font-semibold hover:bg-[#8E7965] transition duration-200"
+          className="w-full p-3 rounded-full bg-[#C8A2F7] text-white font-medium hover:bg-[#AB43BD] transition"
         >
           {isResettingPassword
             ? "Send Magic Login Link"
@@ -118,17 +130,16 @@ export default function AuthModal({ onClose }) {
               clearMessages();
               setIsResettingPassword(true);
             }}
-            className="mt-3 text-sm text-[#5C4B3B] underline w-full hover:text-[#3E3232] transition duration-150"
+            className="mt-3 text-sm underline w-full hover:text-[#AB43BD] transition"
           >
             Forgot Password?
           </button>
         )}
 
         {isResettingPassword && (
-          <p className="text-gray-600 text-sm mt-2 text-center">
-            Supabase does not support traditional password resets. Instead, we
-            send you a **magic login link**. Use it to access your account
-            without a password.
+          <p className="text-sm mt-4 text-center">
+            You will receive a <span className="font-semibold">link</span> to
+            access your account.
           </p>
         )}
 
@@ -138,7 +149,7 @@ export default function AuthModal({ onClose }) {
               clearMessages();
               setIsSigningUp(!isSigningUp);
             }}
-            className="mt-2 text-sm text-blue-500 underline w-full"
+            className="mt-3 text-sm text-[#AB43BD] underline w-full hover:text-[#8B5CF6] transition"
           >
             {isSigningUp
               ? "Already have an account? Sign in"
@@ -152,7 +163,7 @@ export default function AuthModal({ onClose }) {
               clearMessages();
               setIsResettingPassword(false);
             }}
-            className="mt-2 text-sm text-blue-500 underline w-full"
+            className="mt-3 text-sm text-blue-500 underline w-full"
           >
             Back to Sign In
           </button>
@@ -160,7 +171,7 @@ export default function AuthModal({ onClose }) {
 
         <button
           onClick={onClose}
-          className="mt-4 text-sm text-gray-500 underline w-full"
+          className="mt-5 text-sm text-[#4F106E] underline w-full hover:text-[#6A2F8E] transition"
         >
           Close
         </button>

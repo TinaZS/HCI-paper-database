@@ -10,6 +10,8 @@ import ReactionPapers from "./components/ReactionPapers";
 import { useAuth } from "./AuthContext";
 import { supabase } from "./supabaseClient";
 import OnboardingModal from "./components/OnboardingModal";
+import backgroundSvg from "./assets/background.svg";
+import ResetPasswordPage from "./components/ResetPasswordPage";
 
 export default function App() {
   const [results, setResults] = useState([]);
@@ -336,9 +338,11 @@ export default function App() {
           sidebarVisible ? "translate-x-0" : "-translate-x-full"
         } fixed top-0 left-0 z-10`}
       >
-        <div className="bg-[#F5EDE3] text-[#3E3232] font-serif h-full flex flex-col w-full border-r border-[#8E7965]">
+        <div className="bg-[#F3ECFF] text-[#4F106E] font-sans h-full flex flex-col w-full border-r border-[#C8A2F7] shadow-md">
           <div className="p-4 flex justify-between items-center border-b">
-            <h2 className="text-lg font-bold">User Sessions</h2>
+            <h2 className="text-lg font-semibold text-[#4F106E]">
+              User Sessions
+            </h2>
             <button
               onClick={() => setSidebarVisible(false)}
               className="p-1 rounded-full hover:bg-gray-100"
@@ -370,8 +374,8 @@ export default function App() {
                     key={session}
                     className={`cursor-pointer px-3 py-2 rounded-md flex justify-between items-center transition-colors ${
                       activeSession === session
-                        ? "bg-[#D5C7AC] text-[#3E3232] font-semibold"
-                        : "hover:bg-[#E8DDD2]"
+                        ? "bg-[#C8A2F7] text-white font-semibold"
+                        : "hover:bg-[#E0C8FA]"
                     }`}
                     onClick={() => handleSessionChange(session)}
                     style={{ position: "relative" }}
@@ -380,7 +384,7 @@ export default function App() {
                     {renamingSession === session ? (
                       <input
                         type="text"
-                        className="border px-2 py-1 rounded-md w-full"
+                        className="w-full px-4 py-3 rounded-full border border-[#C8A2F7] text-[#4F106E] bg-white placeholder:text-[#B083D6] focus:outline-none focus:ring-2 focus:ring-[#C8A2F7] transition"
                         value={renameValue}
                         onChange={(e) => setRenameValue(e.target.value)}
                         onBlur={() => renameSession(session)}
@@ -448,7 +452,7 @@ export default function App() {
                   onKeyDown={(e) => e.key === "Enter" && createNewSession()}
                 />
                 <button
-                  className="w-full px-3 py-2 bg-[#B8A290] text-white rounded-md hover:bg-[#A68C7C]"
+                  className="w-full px-3 py-2 bg-[#b095cf] text-white rounded-md hover:bg-[#7e6996]"
                   onClick={createNewSession}
                 >
                   + Add
@@ -493,7 +497,10 @@ export default function App() {
           sidebarVisible ? "ml-64" : "ml-0"
         }`}
       >
-        <div className="min-h-screen bg-gradient-to-br from-[#D5C7AC] via-[#53545D] to-[#00234B] flex flex-col items-center px-4">
+        <div
+          className="min-h-screen w-full bg-cover bg-center bg-no-repeat flex flex-col items-center px-4"
+          style={{ backgroundImage: `url(${backgroundSvg})` }}
+        >
           <LoadingBar ref={loadingBarRef} color="#60A5FA" height={10} />
           <Header />
 
@@ -505,8 +512,8 @@ export default function App() {
                 element={
                   <>
                     <h1
-                      className="text-6xl font-bold text-center mt-16 mb-12 tracking-wide"
-                      style={{ fontFamily: "Gloock", color: "#D5C7AC" }}
+                      className="text-6xl text-center mt-16 mb-12 tracking-wide text-[#4F106E]"
+                      style={{ fontFamily: "Gugi, sans-serif" }}
                     >
                       PaperMatch
                     </h1>
@@ -524,7 +531,7 @@ export default function App() {
 
                     {/* Suggested Queries */}
                     <div className="mt-6">
-                      <h2 className="text-lg font-serif font-semibold text-[#E6DAC6] mb-3">
+                      <h2 className="text-lg font-semibold text-[#AB43BD] mb-3">
                         Suggested Searches: {selectedQuery}
                       </h2>
                       <div className="flex gap-2 flex-wrap">
@@ -532,7 +539,7 @@ export default function App() {
                           <button
                             key={index}
                             onClick={() => handleSearch(query)}
-                            className="px-4 py-2 rounded-md bg-[#B8A290] text-[#3E3232] transition duration-200 transform hover:bg-[#A68C7C] hover:scale-105 shadow-sm hover:shadow-md focus:outline-none"
+                            className="px-4 py-2 rounded-full bg-[#D9BAF7] text-[#4F106E] font-medium hover:bg-[#CFA2F4] transition shadow-sm hover:shadow-md"
                           >
                             {query}
                           </button>
@@ -608,6 +615,7 @@ export default function App() {
                   )
                 }
               />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
             </Routes>
           </div>
         </div>

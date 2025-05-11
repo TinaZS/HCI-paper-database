@@ -84,10 +84,7 @@ export default function ReactionPapers({
 
   return (
     <div className="p-6 flex flex-col items-center">
-      <h2
-        className="text-[#3E3232] text-2xl font-bold mb-4 text-center"
-        style={{ fontFamily: "Gloock", color: "#D5C7AC" }}
-      >
+      <h2 className="text-2xl font-semibold text-center mb-4 text-[#4F106E]">
         {reactionType === "like" ? "Your Liked Papers" : "Your Disliked Papers"}
       </h2>
 
@@ -115,19 +112,19 @@ export default function ReactionPapers({
           Loading {reactionType} papers...
         </div>
       ) : filteredPapers.length === 0 ? (
-        <div className="bg-[#F5EDE3] border border-[#8B6C42] text-[#3E3232] px-6 py-6 rounded-xl text-center shadow-md font-serif max-w-xl mx-auto mt-10">
-          <p className="text-lg font-semibold mb-2">
+        <div className="bg-white/70 backdrop-blur-lg border border-[#E5D0FA] text-[#4F106E] px-6 py-6 rounded-2xl text-center shadow-md font-sans max-w-xl mx-auto mt-10">
+          <p className="text-xl font-semibold mb-2">
             You haven’t {reactionType}d any papers yet.
           </p>
-          <p className="text-sm mb-4">
+          <p className="text-sm mb-5">
             Try exploring the homepage and click the{" "}
             <span className="text-red-500 font-bold">♥</span> or{" "}
-            <span className="text-gray-600 font-bold">👎</span> icons to curate
-            your research!
+            <span className="text-yellow-500 font-bold">👎</span> icons to
+            curate your research!
           </p>
           <a
             href="/"
-            className="inline-block mt-2 bg-[#B8A290] hover:bg-[#A68C7C] text-white font-medium px-4 py-2 rounded-md transition"
+            className="inline-block mt-2 bg-[#C8A2F7] hover:bg-[#AB43BD] text-white font-medium px-5 py-2 rounded-full transition shadow"
           >
             Browse Papers
           </a>
