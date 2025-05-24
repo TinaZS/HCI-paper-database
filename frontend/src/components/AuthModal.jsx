@@ -110,7 +110,7 @@ export default function AuthModal({ onClose }) {
         )}
 
         {message && (
-          <p className="text-red-500 text-sm mb-2 text-center">{message}</p>
+          <p className="text-black text-sm mb-2 text-center">{message}</p>
         )}
 
         <button
