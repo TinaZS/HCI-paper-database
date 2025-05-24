@@ -75,8 +75,11 @@ export default function App() {
     async function initializeApp() {
       if (user && token) {
         setIsLoading(true);
-        await fetchUserSessions();
-        if (!ignore) setIsLoading(false);
+        const sessionsFetched = await fetchUserSessions();
+        if (sessionsFetched.length === 0) {
+          await createDefaultSession();
+        }
+        setIsLoading(false);
       }
     }
 
@@ -121,6 +124,37 @@ export default function App() {
       return [];
     }
   }, [token, user?.id]);
+
+  const createDefaultSession = async () => {
+    const defaultName = "Session 1";
+    const userId = user?.id;
+    if (!userId) return;
+
+    setSessions([defaultName]);
+    setActiveSession(defaultName);
+    localStorage.setItem("activeSession", defaultName);
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await fetch(`${API_BASE_URL}/create-session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          session_name: defaultName,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to create default session");
+      const data = await response.json();
+      console.log("✅ Default session created:", data);
+    } catch (error) {
+      console.error("Error creating default session:", error);
+    }
+  };
 
   const createNewSession = async () => {
     if (!newSessionName.trim()) return;
@@ -381,7 +415,7 @@ export default function App() {
                     style={{ position: "relative" }}
                   >
                     {/* Show input when renaming */}
-                    {renamingSession === session ? (
+                    {/* {renamingSession === session ? (
                       <input
                         type="text"
                         className="w-full px-4 py-3 rounded-full border border-[#C8A2F7] text-[#4F106E] bg-white placeholder:text-[#B083D6] focus:outline-none focus:ring-2 focus:ring-[#C8A2F7] transition"
@@ -395,8 +429,8 @@ export default function App() {
                       />
                     ) : (
                       <span>{session}</span>
-                    )}
-
+                    )} */}
+                    <span>{session}</span>
                     <button
                       className="cursor-pointer px-2 text-gray-500 hover:text-black"
                       onClick={(e) => {
@@ -410,7 +444,7 @@ export default function App() {
                     {/* Popup Menu */}
                     {showPopup === session && (
                       <div className="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg p-2 flex flex-col gap-2 w-48 border border-gray-200 z-10">
-                        <button
+                        {/* <button
                           className="text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none"
                           onClick={() => {
                             setRenamingSession(session);
@@ -419,13 +453,19 @@ export default function App() {
                           }}
                         >
                           Rename
-                        </button>
+                        </button> */}
                         <button
-                          className="text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          className={`text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                            sessions.length === 1
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
                           onClick={() => {
-                            setShowPopup(null); // close popup
-                            setConfirmDelete(session); // open confirmation modal
+                            if (sessions.length === 1) return; // Don't allow delete
+                            setShowPopup(null);
+                            setConfirmDelete(session);
                           }}
+                          disabled={sessions.length === 1}
                         >
                           Delete Session
                         </button>
@@ -465,23 +505,23 @@ export default function App() {
 
       {confirmDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-[#F5EDE3] p-6 rounded-xl shadow-xl w-96 text-center transform transition-all scale-95 hover:scale-100 border border-[#8B6C42]">
-            <h3 className="text-lg font-serif font-semibold text-[#3E3232] mb-3">
+          <div className="bg-[#F3ECFF] p-6 rounded-xl shadow-xl w-96 text-center transform transition-all scale-95 hover:scale-100 border border-[#C8A2F7]">
+            <h3 className="text-lg font-semibold text-[#4F106E] mb-3 font-sans">
               Confirm Deletion
             </h3>
-            <p className="text-sm text-[#5C4033] mb-6">
+            <p className="text-sm text-[#6B368D] mb-6 font-sans">
               Are you sure you want to delete{" "}
-              <span className="font-bold text-[#  ]">{confirmDelete}</span>?
+              <span className="font-bold">{confirmDelete}</span>?
             </p>
             <div className="flex justify-center gap-4">
               <button
-                className="bg-[#A63A3A] text-white px-5 py-2 rounded-md font-medium font-serif hover:bg-[#872C2C] transition"
+                className="bg-[#C8A2F7] text-white px-5 py-2 rounded-md font-medium font-sans hover:bg-[#B083D6] transition"
                 onClick={confirmDeletion}
               >
                 Delete
               </button>
               <button
-                className="bg-[#E6DAC6] text-[#3E3232] px-5 py-2 rounded-md font-medium font-serif hover:bg-[#D9CCB4] transition"
+                className="bg-white text-[#4F106E] border border-[#C8A2F7] px-5 py-2 rounded-md font-medium font-sans hover:bg-[#EFE1FF] transition"
                 onClick={() => setConfirmDelete(null)}
               >
                 Cancel
