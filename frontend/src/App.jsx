@@ -236,7 +236,7 @@ export default function App() {
         "Content-Type": "application/json",
       };
 
-      console.log("🧠 Raw token:", token);
+      //console.log("🧠 Raw token:", token);
       console.log(
         "✅ Final token being sent?",
         token && token !== "undefined" && token !== "null"
@@ -246,8 +246,8 @@ export default function App() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      console.log("🌍 Frontend Origin:", window.location.origin);
-      console.log("📡 Backend API Base URL:", API_BASE_URL);
+      //console.log("🌍 Frontend Origin:", window.location.origin);
+      //console.log("📡 Backend API Base URL:", API_BASE_URL);
 
       const response = await fetch(`${API_BASE_URL}/search`, {
         method: "POST",
