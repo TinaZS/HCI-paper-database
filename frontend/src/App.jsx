@@ -12,6 +12,7 @@ import { supabase } from "./supabaseClient";
 import OnboardingModal from "./components/OnboardingModal";
 import backgroundSvg from "./assets/background.svg";
 import ResetPasswordPage from "./components/ResetPasswordPage";
+import FloatingChatbot from "./components/FloatingChatbot";
 
 export default function App() {
   const [results, setResults] = useState([]);
@@ -660,6 +661,9 @@ export default function App() {
           </div>
         </div>
       </div>
+      
+      {/* Floating RAG Chatbot */}
+      <FloatingChatbot />
     </div>
   );
 }

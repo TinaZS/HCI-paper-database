@@ -12,6 +12,7 @@ import jwt  # PyJWT library to decode JWT tokens
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
+from scripts.generate_answer import generate_answer_from_papers
 from supabase_client import supabase 
 from dotenv import load_dotenv
 
@@ -141,6 +142,74 @@ def extract_user_id_from_token():
         return user_id, None  # Return user_id if successful
     except Exception as e:
         return None, jsonify({"error": "Invalid token", "details": str(e)}), 401
+
+
+@app.route("/rag_query", methods=["POST"])
+def rag_query():
+    """RAG chatbot endpoint - answers questions using papers from database"""
+    data = request.get_json()
+    query = data.get("query", "").strip()
+
+    if not query:
+        return jsonify({"answer": "No query provided."}), 400
+
+    try:
+        # Disable personalization for RAG queries - use guest mode for consistent results
+        results = user_search(
+            query=query,
+            index=index,
+            numPapers=8,  # Get more papers for better coverage
+            embedState=False,
+            topic=None,
+            user_id=None  # Force guest mode (no personalization)
+        )
+
+        # Fallback search strategies if initial search fails
+        if not results:
+            print("Initial search returned no results, trying fallback with more papers...")
+            
+            # Strategy 1: More papers with wider net
+            results = user_search(
+                query=query,
+                index=index,
+                numPapers=20,  # Cast wider net
+                embedState=False,
+                topic=None,
+                user_id=None
+            )
+            
+            # Strategy 2: Try simplified/expanded query terms
+            if not results and len(query.split()) > 2:
+                # Extract key terms for broader search
+                key_terms = []
+                stop_words = {'for', 'in', 'on', 'with', 'the', 'a', 'an', 'and', 'or', 'but'}
+                words = query.lower().split()
+                for word in words:
+                    if word not in stop_words and len(word) > 2:
+                        key_terms.append(word)
+                
+                if key_terms:
+                    broader_query = " ".join(key_terms[:3])  # Use top 3 key terms
+                    print(f"Trying broader query: '{broader_query}'")
+                    results = user_search(
+                        query=broader_query,
+                        index=index,
+                        numPapers=12,
+                        embedState=False,
+                        topic=None,
+                        user_id=None
+                    )
+        
+        if not results:
+            return jsonify({"answer": "I couldn't find any relevant papers in the database for your question. Please try rephrasing your query or asking about a different topic."})
+
+        # Generate conversational answer using retrieved papers
+        answer = generate_answer_from_papers(query, results)
+        return jsonify({"answer": answer})
+
+    except Exception as e:
+        print("❌ RAG error:", e)
+        return jsonify({"answer": f"Something went wrong: {str(e)}"}), 500
 
 
 @app.route("/like", methods=["POST"])
