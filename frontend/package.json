@@ -15,6 +15,7 @@
     "framer-motion": "^12.5.0",
     "lottie-react": "^2.4.1",
     "react": "^19.0.0",
+    "react-chatbot-kit": "^2.2.2",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.3.0",
     "react-top-loading-bar": "^3.0.2"
