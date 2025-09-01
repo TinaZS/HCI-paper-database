@@ -469,7 +469,17 @@ def get_user_sessions():
 
 @app.route("/ping", methods=["GET"])
 def ping():
-    return jsonify({"status": "alive"}), 200
+    try:
+        # Minimal lightweight query (could be any trivial table)
+        response = supabase.table("paper_old_embeddings").select("id").limit(1).execute()
+
+        # Check if Supabase responded
+        if response.data is not None:
+            return jsonify({"status": "alive", "supabase": "reachable"}), 200
+        else:
+            return jsonify({"status": "alive", "supabase": "no data"}), 200
+    except Exception as e:
+        return jsonify({"status": "alive", "supabase_error": str(e)}), 500
 
 
 if __name__ == "__main__":
