@@ -5,6 +5,7 @@ import "react-chatbot-kit/build/main.css";
 export default function FloatingChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
   // --- Chatbot config (unchanged API behavior) ---
   const config = useMemo(
@@ -46,7 +47,7 @@ export default function FloatingChatbot() {
       const loading = this.createChatBotMessage("Thinking…");
       this.setState((p) => ({ ...p, messages: [...p.messages, loading] }));
       try {
-        const res = await fetch("http://localhost:10000/rag_query", {
+        const res = await fetch(`${API_BASE_URL}/rag_query`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: message }),
