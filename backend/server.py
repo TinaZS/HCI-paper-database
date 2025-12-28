@@ -10,9 +10,12 @@ import jwt  # PyJWT library to decode JWT tokens
 
 
 
+
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
 from scripts.generate_answer import generate_answer_from_papers
+from scripts.merge_arxiv_data import merge_chunks
 from supabase_client import supabase 
 from dotenv import load_dotenv
 
@@ -54,7 +57,22 @@ def download_faiss_index():
         print("ERROR: Failed to download FAISS index from Supabase")
 
 
+# Merge chunked arXiv data at startup
+print("=" * 60)
+print("🚀 Starting backend server initialization...")
+print("=" * 60)
+
+try:
+    print("\n📦 Step 1: Merging chunked arXiv data...")
+    merge_chunks()
+    print("✅ arXiv data ready!")
+except Exception as e:
+    print(f"⚠️  Warning: Could not merge arXiv chunks: {e}")
+    print("   Continuing with existing data if available...")
+
+print("\n📥 Step 2: Loading FAISS index...")
 download_faiss_index()
+
 
 if os.path.exists(FAISS_INDEX_PATH):
     index = faiss.read_index(FAISS_INDEX_PATH)
@@ -484,7 +502,7 @@ def ping():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # Render
-    print(f"Starting Flask API on port {port}")
+    print(f"Starting Flask API on port {port}") 
     app.run(host="0.0.0.0", port=port, debug=False)
 
 

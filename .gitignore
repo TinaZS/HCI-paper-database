@@ -1,22 +1,39 @@
-#Frontend
-node_modules/
-dist/
-.vite/
-.vscode/
-.env.local
-.env.production
-.DS_Store
-
-#Backend
-venv/
+# Python
 __pycache__/
-*.pyc
-instance/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Environment variables
 .env
-supabase_env.json
+.env.local
 
+# Large data files (merged version - chunks are in data/ and tracked)
+arxiv-metadata-oai-snapshot.json
 
-#System Files
-*.log
-Thumbs.db
+# FAISS indices (generated at runtime or downloaded)
+*.index
+backend/*.index
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
