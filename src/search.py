@@ -16,6 +16,7 @@ AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 AZURE_OPENAI_API_VERSION = "2023-05-15"
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "papers")
 
 
 
@@ -36,17 +37,84 @@ def get_openai_embedding(text):
 
     print(f'Azure open ai deployment name: {AZURE_OPENAI_DEPLOYMENT}')
 
-
-    embedding = np.array(response.data[0].embedding, dtype=np.float32)  # Ensure FAISS-compatible float32 format
+    embedding = np.array(response.data[0].embedding, dtype=np.float32)  # Ensure float32 format
 
     #take out this statement later
     assert embedding.shape[0] == 1536, f"Unexpected embedding dimension: {embedding.shape[0]}"
 
     return embedding.reshape(1, -1)  
 
+
+def qdrant_search_all_shards(query_embedding, clients, k=6, topic=""):
+    """Search all Qdrant shards and merge results."""
+    all_hits = []
+    vector = query_embedding.flatten().tolist()
+    
+    # Filter for topic if provided (Qdrant filter)
+    qdrant_filter = None
+    if topic:
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+        qdrant_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="categories",
+                    match=MatchValue(value=topic)
+                )
+            ]
+        )
+
+    for client in clients:
+        try:
+            # Use query_points (recommended API for 1.10+)
+            results = client.query_points(
+                collection_name=QDRANT_COLLECTION,
+                query=vector,
+                query_filter=qdrant_filter,
+                limit=k,
+                with_payload=True,
+                with_vectors=True
+            ).points
+            
+            import zlib
+            import base64
+            for hit in results:
+                paper = hit.payload
+                paper["similarity_score"] = hit.score
+                paper["embedding"] = hit.vector
+                
+                # Decompress abstract if it was stored compressed
+                if paper.get("compressed"):
+                    try:
+                        compressed_data = base64.b64decode(paper["abstract"])
+                        paper["abstract"] = zlib.decompress(compressed_data).decode('utf-8')
+                    except Exception as e:
+                        print(f"⚠️ Decompression error: {e}")
+
+                # Defensive formatting for frontend
+                cats = paper.get("categories", [])
+                paper["categories"] = cats.split() if isinstance(cats, str) else cats
+                
+                # Map standardized keys for frontend consistency
+                if "published_date" in paper:
+                    paper["published_date"] = paper["published_date"]
+                elif "published" in paper:
+                    paper["published_date"] = paper["published"]
+                
+                all_hits.append(paper)
+        except Exception as e:
+            print(f"⚠️ Error searching Qdrant shard: {e}")
+
+    # Merge and sort by score
+    all_hits = sorted(all_hits, key=lambda x: x["similarity_score"], reverse=True)
+    return all_hits[:k]
+
+
 #add user id as an input to search
-def search(query, index, k=6, embedState=False,topic="",user_id=""):
-    """Converts a text query to an embedding, searches FAISS, and fetches metadata from Supabase."""
+def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clients=None):
+    """
+    Search using either FAISS (if index provided) or Qdrant (if qdrant_clients provided).
+    Converts a text query to an embedding and fetches results.
+    """
     
     first_time=time.time()
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
@@ -101,6 +169,17 @@ def search(query, index, k=6, embedState=False,topic="",user_id=""):
     embedding_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(embedding_time)) + f".{int((embedding_time % 1) * 1000):03d}"
     print(f"Timestamp at middle of inner search function: {embedding_timestamp}")
 
+    # --- Qdrant Path ---
+    if qdrant_clients:
+        print(f"🌐 Searching Qdrant collection '{QDRANT_COLLECTION}' across {len(qdrant_clients)} shards")
+        results = qdrant_search_all_shards(query_embedding, qdrant_clients, k, topic)
+        
+        for result in results:
+            result["similarity_score"] = round(result["similarity_score"], 2)
+        
+        return results
+
+    # --- Legacy FAISS Path ---
     results = []
     attempt_size = 5 * k  # Always over-fetch, topic or not
     max_attempts = 5  # Limit retries to prevent infinite loops
@@ -108,7 +187,7 @@ def search(query, index, k=6, embedState=False,topic="",user_id=""):
 
     while len(results) < k and attempt_count < max_attempts:
         # Step 2: Search FAISS with larger search pool if needed
-        distances, indices = index.search(query_embedding, attempt_size)
+        distances, indices = index.search(query_embedding.astype(np.float32), attempt_size)
         
         if indices[0][0] == -1:
             print("No matching papers found.")

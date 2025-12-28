@@ -58,7 +58,7 @@ def generate_answer_from_papers(query, papers):
         f"User's question: {query}"
     ))
 
-    response = llm([
+    response = llm.invoke([
         system_prompt,
         few_shot_user,
         few_shot_bot,

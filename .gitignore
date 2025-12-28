@@ -15,6 +15,11 @@ ENV/
 # Large data files (merged version - chunks are in data/ and tracked)
 arxiv-metadata-oai-snapshot.json
 
+# Embedding data (generated locally, not in git)
+embedded_data/
+embedding_progress.json
+upload_progress.json
+
 # FAISS indices (generated at runtime or downloaded)
 *.index
 backend/*.index

@@ -10,20 +10,35 @@ import jwt  # PyJWT library to decode JWT tokens
 
 
 
-
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from scripts.user_search import user_search
 from scripts.generate_answer import generate_answer_from_papers
-from scripts.merge_arxiv_data import merge_chunks
 from supabase_client import supabase 
 from dotenv import load_dotenv
+from qdrant_client import QdrantClient
 
 load_dotenv()
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 FAISS_INDEX_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "faiss_index.index"))
 FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
+
+# --- Qdrant Initialization ---
+active_collection = os.getenv("QDRANT_COLLECTION", "papers")
+qdrant_clients = []
+print(f"🔌 Initializing Qdrant clients (Active Collection: '{active_collection}')...")
+for i in range(1, 4):  # Support up to 3 shards for now
+    url = os.getenv(f"QDRANT_URL{i}")
+    key = os.getenv(f"QDRANT_KEY{i}")
+    if url and key:
+        try:
+            client = QdrantClient(url=url, api_key=key)
+            # Verify connection
+            client.get_collections()
+            qdrant_clients.append(client)
+            print(f"   ✅ Connected to Qdrant Shard {i}")
+        except Exception as e:
+            print(f"   ⚠️ Failed to connect to Qdrant Shard {i}: {e}")
 
 app = Flask(__name__)
 
@@ -42,44 +57,37 @@ def handle_preflight():
 
 
 def download_faiss_index():
-    """Download FAISS index from Supabase Storage."""
+    """Download FAISS index from Supabase Storage (Fallback logic)."""
     if os.path.exists(FAISS_INDEX_PATH):
         print("FAISS index already exists. Skipping download.")
-        return  # Skip downloading
+        return 
 
-    print("Downloading FAISS index from Supabase...")
-    response = requests.get(FAISS_STORAGE_URL)
-    if response.status_code == 200:
-        with open(FAISS_INDEX_PATH, "wb") as f:
-            f.write(response.content)
-        print("FAISS index downloaded successfully.")
+    # Only download if Qdrant is NOT configured
+    if not qdrant_clients:
+        print("Downloading FAISS index from Supabase...")
+        response = requests.get(FAISS_STORAGE_URL)
+        if response.status_code == 200:
+            with open(FAISS_INDEX_PATH, "wb") as f:
+                f.write(response.content)
+            print("FAISS index downloaded successfully.")
+        else:
+            print("ERROR: Failed to download FAISS index from Supabase")
     else:
-        print("ERROR: Failed to download FAISS index from Supabase")
+        print("Qdrant configured - skipping FAISS download.")
 
 
-# Merge chunked arXiv data at startup
-print("=" * 60)
-print("🚀 Starting backend server initialization...")
-print("=" * 60)
-
-try:
-    print("\n📦 Step 1: Merging chunked arXiv data...")
-    merge_chunks()
-    print("✅ arXiv data ready!")
-except Exception as e:
-    print(f"⚠️  Warning: Could not merge arXiv chunks: {e}")
-    print("   Continuing with existing data if available...")
-
-print("\n📥 Step 2: Loading FAISS index...")
 download_faiss_index()
 
-
+index = None
 if os.path.exists(FAISS_INDEX_PATH):
-    index = faiss.read_index(FAISS_INDEX_PATH)
-    print(f"FAISS index loaded successfully! Total vectors: {index.ntotal}")
+    try:
+        index = faiss.read_index(FAISS_INDEX_PATH)
+        print(f"FAISS index loaded successfully! Total vectors: {index.ntotal}")
+    except Exception as e:
+        print(f"⚠️ FAISS index file found but failed to load: {e}")
 
-else:
-    raise RuntimeError("FAISS index could not be loaded! Check download")
+if not index and not qdrant_clients:
+    print("❌ CRITICAL: No search backend (FAISS or Qdrant) available!")
 
 
 
@@ -136,8 +144,8 @@ def search():
     print(f"Timestamp at user_search start: {start_timestamp}")
 
     
-    #add user id as an input
-    results = user_search(query, index, numPapers,useEmbeddings,topic,user_id)
+    # Pass qdrant_clients to the search logic
+    results = user_search(query, index, numPapers, useEmbeddings, topic, user_id, qdrant_clients=qdrant_clients)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
@@ -179,7 +187,8 @@ def rag_query():
             numPapers=8,  # Get more papers for better coverage
             embedState=False,
             topic=None,
-            user_id=None  # Force guest mode (no personalization)
+            user_id=None,  # Force guest mode (no personalization)
+            qdrant_clients=qdrant_clients
         )
 
         # Fallback search strategies if initial search fails
@@ -193,7 +202,8 @@ def rag_query():
                 numPapers=20,  # Cast wider net
                 embedState=False,
                 topic=None,
-                user_id=None
+                user_id=None,
+                qdrant_clients=qdrant_clients
             )
             
             # Strategy 2: Try simplified/expanded query terms

@@ -5,26 +5,30 @@ import time
 FAISS_INDEX_PATH = "faiss_index.index"
 
 #add user query as an input to search
-def user_search(query, index, numPapers,embedState,topic,user_id):
+def user_search(query, index, numPapers, embedState, topic, user_id, qdrant_clients=None):
  
-    if not index:
-        print("ERROR: FAISS index is not loaded")
+    if not index and not qdrant_clients:
+        print("ERROR: No search index (FAISS or Qdrant) available")
         return []  
     
-    print(f"Using preloaded FAISS index. Total vectors: {index.ntotal}") 
+    if qdrant_clients:
+        print(f"Using Qdrant optimization. Total shards: {len(qdrant_clients)}")
+    else:
+        print(f"Using preloaded FAISS index. Total vectors: {index.ntotal}") 
+        
     print(f"User ID is: {user_id if user_id else 'Guest'}")
 
 
-    start_time = time.time()  # Start timing for search
+    start_time = time.time()
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at search start: {start_timestamp}")
 
     print(f"Numpapers is {numPapers}")
-    #add user id as an input to search
-    results = search(query, index, numPapers,embedState,topic,user_id)
+    # Pass qdrant_clients to the search function
+    results = search(query, index, numPapers, embedState, topic, user_id, qdrant_clients=qdrant_clients)
     print(f"LenResult is {len(results)}")
 
-    end_time = time.time()  # Calculate search time
+    end_time = time.time()
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
     print(f"Timestamp at search end: {end_timestamp}")
 
@@ -35,15 +39,15 @@ def user_search(query, index, numPapers,embedState,topic,user_id):
 
     return [
         {
-            "paper_id": result["paper_id"],
-            "title": result["title"],
-            "authors": result["authors"],
+            "paper_id": result.get("paper_id", ""),
+            "title": result.get("title", "No Title"),
+            "authors": result.get("authors", []),
             "abstract": result.get("abstract", "No abstract available"),
             "datePublished": result.get("published_date", "Unknown"),
-            "link": result["link"],
-            "similarity_score": result["similarity_score"],
-            "categories": result["categories"],
-            "embedding": result["embedding"]
+            "link": result.get("link", "#"),
+            "similarity_score": result.get("similarity_score", 0),
+            "categories": result.get("categories", []),
+            "embedding": result.get("embedding", [])
         }
         for result in results
     ]
