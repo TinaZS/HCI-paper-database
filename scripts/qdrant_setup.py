@@ -21,14 +21,18 @@ EMBEDDED_DATA_DIR = "embedded_data"
 CHECKPOINT_FILE = f"upload_progress_{COLLECTION_NAME}.json"
 REGISTRY_FILE = "shard_registry.json"
 UPLOAD_BATCH_SIZE = 200  
-SIZE_LIMIT_VECTORS = 580_079  # Capped at current count to force immediate Shard 2 spillover
+SIZE_LIMIT_VECTORS = 560_000  # Reduced safety threshold to 560k
 TEST_MODE = False
 
-# Qdrant instances
-QDRANT_INSTANCES = [
-    {"url": os.getenv("QDRANT_URL1"), "api_key": os.getenv("QDRANT_KEY1"), "name": "Shard 1"},
-    {"url": os.getenv("QDRANT_URL2"), "api_key": os.getenv("QDRANT_KEY2"), "name": "Shard 2"},
-]
+# Qdrant instances (Dynamic discovery)
+QDRANT_INSTANCES = []
+for i in range(1, 21):
+    url = os.getenv(f"QDRANT_URL{i}")
+    key = os.getenv(f"QDRANT_KEY{i}")
+    if url:
+        QDRANT_INSTANCES.append({"url": url, "api_key": key, "name": f"Shard {i}"})
+    else:
+        break
 
 def load_registry():
     if os.path.exists(REGISTRY_FILE):

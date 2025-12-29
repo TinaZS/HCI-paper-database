@@ -49,71 +49,110 @@ def get_openai_embedding(text):
     return embedding.reshape(1, -1)  
 
 
-def qdrant_search_all_shards(query_embedding, clients, k=6, topic=""):
-    """Search all Qdrant shards and merge results."""
-    all_hits = []
+def hydrate_papers(client, point_ids):
+    """Fetch full payload for specific IDs from a single shard."""
+    if not point_ids: return []
+    try:
+        results = client.retrieve(
+            collection_name=QDRANT_COLLECTION,
+            ids=point_ids,
+            with_payload=True,
+            with_vectors=False
+        )
+        return results
+    except Exception as e:
+        print(f"⚠️ Hydration error: {e}")
+        return []
+
+def qdrant_search_parallel(query_embedding, clients, k=6, topic=""):
+    """
+    Search all shards in parallel using ID-First strategy.
+    1. Broadcast ID-only query to all shards (Parallel)
+    2. Merge scores locally
+    3. Hydrate only the top K winners (Parallel)
+    """
     vector = query_embedding.flatten().tolist()
     
-    # Filter for topic if provided (Qdrant filter)
+    # Filter setup
     qdrant_filter = None
     if topic:
         qdrant_filter = Filter(
-            must=[
-                FieldCondition(
-                    key="categories",
-                    match=MatchValue(value=topic)
-                )
-            ]
+            must=[FieldCondition(key="categories", match=MatchValue(value=topic))]
         )
 
-    for idx, client in enumerate(clients):
-        shard_start = time.perf_counter()
+    # --- Step 1: Parallel ID Search (Lightweight) ---
+    all_scored_points = []
+    
+    def search_shard_ids(idx, client):
+        start = time.perf_counter()
         try:
-            # Use query_points (recommended API for 1.10+)
-            results = client.query_points(
+            res = client.query_points(
                 collection_name=QDRANT_COLLECTION,
                 query=vector,
                 query_filter=qdrant_filter,
                 limit=k,
-                with_payload=True,
+                with_payload=False, # ID & Score only
                 with_vectors=False
             ).points
-            shard_q_done = time.perf_counter()
-            
-            for hit in results:
-                paper = hit.payload
-                paper["similarity_score"] = hit.score
-                # paper["embedding"] = hit.vector # No longer needed for frontend display
-                
-                # Decompress abstract if it was stored compressed
-                if paper.get("compressed"):
-                    try:
-                        compressed_data = base64.b64decode(paper["abstract"])
-                        paper["abstract"] = zlib.decompress(compressed_data).decode('utf-8')
-                    except Exception as e:
-                        print(f"⚠️ Decompression error: {e}")
-
-                # Defensive formatting for frontend
-                cats = paper.get("categories", [])
-                paper["categories"] = cats.split() if isinstance(cats, str) else cats
-                
-                # Map standardized keys for frontend consistency
-                if "published" in paper:
-                    paper["published_date"] = paper["published"]
-                # If published_date already exists from Qdrant shard, keep it
-                
-                all_hits.append(paper)
-            
-            shard_total = time.perf_counter() - shard_start
-            q_time = shard_q_done - shard_start
-            print(f"   ⏱️ Shard {idx+1} Total: {shard_total*1000:.2f}ms (Qdrant: {q_time*1000:.2f}ms, Processing: {(shard_total-q_time)*1000:.2f}ms)")
-
+            dur = (time.perf_counter() - start) * 1000
+            print(f"   ⚡ Shard {idx+1} ID-Search: {dur:.2f}ms")
+            return [(hit.id, hit.score, idx) for hit in res]
         except Exception as e:
-            print(f"⚠️ Error searching Qdrant shard: {e}")
+            print(f"⚠️ Error querying Shard {idx+1}: {e}")
+            return []
 
-    # Merge and sort by score
-    all_hits = sorted(all_hits, key=lambda x: x["similarity_score"], reverse=True)
-    return all_hits[:k]
+    with ThreadPoolExecutor() as executor:
+        # Launch all searches
+        futures = [executor.submit(search_shard_ids, i, c) for i, c in enumerate(clients)]
+        for future in futures:
+            all_scored_points.extend(future.result())
+
+    # --- Step 2: Global Merge & Sort ---
+    # Sort by score descending and take top K
+    all_scored_points.sort(key=lambda x: x[1], reverse=True)
+    top_winners = all_scored_points[:k]
+
+    # --- Step 3: Hydrate Winners ---
+    # Group IDs by shard to minimize calls
+    shard_map = {}
+    for pid, score, shard_idx in top_winners:
+        if shard_idx not in shard_map: shard_map[shard_idx] = []
+        shard_map[shard_idx].append(pid)
+
+    final_results = []
+    
+    # Fetch payloads (Can also be parallelized if needed, but usually fast enough sequentially for <10 items)
+    for shard_idx, pids in shard_map.items():
+        client = clients[shard_idx]
+        hydrated_points = hydrate_papers(client, pids)
+        
+        # Map back to result format
+        for point in hydrated_points:
+            paper = point.payload
+            # Reinject the score (retrieve() doesn't return score, we have it from step 1)
+            # Find original score
+            original_score = next(s for p, s, i in top_winners if p == point.id)
+            paper["similarity_score"] = original_score
+
+            # Decompress
+            if paper.get("compressed"):
+                try:
+                    compressed_data = base64.b64decode(paper["abstract"])
+                    paper["abstract"] = zlib.decompress(compressed_data).decode('utf-8')
+                except Exception as e:
+                    print(f"⚠️ Decompression error: {e}")
+
+            # Formatting
+            cats = paper.get("categories", [])
+            paper["categories"] = cats.split() if isinstance(cats, str) else cats
+            if "published" in paper:
+                paper["published_date"] = paper["published"]
+            
+            final_results.append(paper)
+
+    # Re-sort final results because hydration order might differ
+    final_results.sort(key=lambda x: x["similarity_score"], reverse=True)
+    return final_results
 
 
 #add user id as an input to search
@@ -185,7 +224,7 @@ def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clien
     # --- Qdrant Path ---
     if qdrant_clients:
         print(f"🌐 Searching Qdrant collection '{QDRANT_COLLECTION}' across {len(qdrant_clients)} shards")
-        results = qdrant_search_all_shards(query_embedding, qdrant_clients, k, topic)
+        results = qdrant_search_parallel(query_embedding, qdrant_clients, k, topic)
         
         for result in results:
             result["similarity_score"] = round(result["similarity_score"], 2)

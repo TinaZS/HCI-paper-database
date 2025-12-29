@@ -27,18 +27,20 @@ FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/
 active_collection = os.getenv("QDRANT_COLLECTION", "papers")
 qdrant_clients = []
 print(f"🔌 Initializing Qdrant clients (Active Collection: '{active_collection}')...")
-for i in range(1, 4):  # Support up to 3 shards for now
+for i in range(1, 20):  # Dynamic support up to 20 shards
     url = os.getenv(f"QDRANT_URL{i}")
     key = os.getenv(f"QDRANT_KEY{i}")
-    if url and key:
-        try:
-            client = QdrantClient(url=url, api_key=key)
-            # Verify connection
-            client.get_collections()
-            qdrant_clients.append(client)
-            print(f"   ✅ Connected to Qdrant Shard {i}")
-        except Exception as e:
-            print(f"   ⚠️ Failed to connect to Qdrant Shard {i}: {e}")
+    if not url:
+        break # Stop checking if no more shards are defined
+        
+    try:
+        client = QdrantClient(url=url, api_key=key, timeout=30.0)
+        # Verify connection
+        client.get_collections()
+        qdrant_clients.append(client)
+        print(f"   ✅ Connected to Qdrant Shard {i}")
+    except Exception as e:
+        print(f"   ⚠️ Failed to connect to Qdrant Shard {i}: {e}")
 
 app = Flask(__name__)
 
@@ -123,10 +125,6 @@ def search():
             print("✅ Authenticated user ID:", user_id)
         except Exception as e:
             print("⚠️ Invalid or expired token. Proceeding as guest.")
-
-
-
-
 
     numPapers = data.get("numPapers")
     if not numPapers or not str(numPapers).isdigit():
