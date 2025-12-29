@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 import sys
 
 from src.construct_profile import construct_user_profile
+from concurrent.futures import ThreadPoolExecutor
+import zlib
+import base64
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 load_dotenv()
 
@@ -53,7 +57,6 @@ def qdrant_search_all_shards(query_embedding, clients, k=6, topic=""):
     # Filter for topic if provided (Qdrant filter)
     qdrant_filter = None
     if topic:
-        from qdrant_client.models import Filter, FieldCondition, MatchValue
         qdrant_filter = Filter(
             must=[
                 FieldCondition(
@@ -63,7 +66,8 @@ def qdrant_search_all_shards(query_embedding, clients, k=6, topic=""):
             ]
         )
 
-    for client in clients:
+    for idx, client in enumerate(clients):
+        shard_start = time.perf_counter()
         try:
             # Use query_points (recommended API for 1.10+)
             results = client.query_points(
@@ -72,15 +76,14 @@ def qdrant_search_all_shards(query_embedding, clients, k=6, topic=""):
                 query_filter=qdrant_filter,
                 limit=k,
                 with_payload=True,
-                with_vectors=True
+                with_vectors=False
             ).points
+            shard_q_done = time.perf_counter()
             
-            import zlib
-            import base64
             for hit in results:
                 paper = hit.payload
                 paper["similarity_score"] = hit.score
-                paper["embedding"] = hit.vector
+                # paper["embedding"] = hit.vector # No longer needed for frontend display
                 
                 # Decompress abstract if it was stored compressed
                 if paper.get("compressed"):
@@ -95,12 +98,16 @@ def qdrant_search_all_shards(query_embedding, clients, k=6, topic=""):
                 paper["categories"] = cats.split() if isinstance(cats, str) else cats
                 
                 # Map standardized keys for frontend consistency
-                if "published_date" in paper:
-                    paper["published_date"] = paper["published_date"]
-                elif "published" in paper:
+                if "published" in paper:
                     paper["published_date"] = paper["published"]
+                # If published_date already exists from Qdrant shard, keep it
                 
                 all_hits.append(paper)
+            
+            shard_total = time.perf_counter() - shard_start
+            q_time = shard_q_done - shard_start
+            print(f"   ⏱️ Shard {idx+1} Total: {shard_total*1000:.2f}ms (Qdrant: {q_time*1000:.2f}ms, Processing: {(shard_total-q_time)*1000:.2f}ms)")
+
         except Exception as e:
             print(f"⚠️ Error searching Qdrant shard: {e}")
 
@@ -120,48 +127,54 @@ def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clien
     first_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(first_time)) + f".{int((first_time % 1) * 1000):03d}"
     print(f"Timestamp at start of inner search function: {first_timestamp}")
 
-    # 🚫 Skip personalization for guest users
-    if user_id:
-        print("🔐 Logged-in user – attempting to personalize")
+    # --- Parallel Fetch Phase ---
+    with ThreadPoolExecutor() as executor:
+        # 1. Start Azure Embedding
+        az_future = executor.submit(get_openai_embedding, query) if not embedState else None
+        
+        # 2. Start Supabase Personalization (if logged in)
+        sb_future = None
+        if user_id:
+            print("🔐 Logged-in user – attempting to personalize")
+            def fetch_likes(uid):
+                sb_start = time.perf_counter()
+                res = supabase.table("likes").select("paper_id, reaction_type,created_at, new_papers(title, authors, abstract, published_date, link, categories, embedding)").eq("user_id", uid).eq("reaction_type", "like").execute()
+                return res, time.perf_counter() - sb_start
+            sb_future = executor.submit(fetch_likes, user_id)
 
-        response = (
-            supabase
-            .table("likes")
-            .select("paper_id, reaction_type,created_at, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
-            .eq("user_id", user_id)
-            .eq("reaction_type", "like")
-            .execute()
-        )
-
-        if response.data:
-            print(f"✅ {len(response.data)} liked papers found for user {user_id}")
-            papers = [
-                {
-                    "paper_id": row["paper_id"],
-                    "created_at": row["created_at"],
-                    "embedding": row["new_papers"]["embedding"]
-                }
-                for row in response.data
-            ]
-
-            user_profile_embeddings = construct_user_profile(papers)
-
-            if not embedState:
-                query_embedding = get_openai_embedding(query)
-            else:
-                query_embedding = np.array(query).reshape(1, -1)
-
-            # ✨ Blend current query and user profile
-            query_factor = 0.9
-            historical_factor = 0.1
-            query_embedding = query_factor * query_embedding + historical_factor * user_profile_embeddings
-
+        # Wait for Azure
+        emb_start_perf = time.perf_counter()
+        if az_future:
+            query_embedding = az_future.result()
+            print(f"   ⏱️ Azure Embedding (Async wait): {(time.perf_counter() - emb_start_perf)*1000:.2f}ms")
         else:
-            print("⚠️ No liked papers for personalization. Falling back to regular search.")
-            query_embedding = get_openai_embedding(query) if not embedState else np.array(query).reshape(1, -1)
-    else:
-        print("Guest user: skipping personalization.")
-        query_embedding = get_openai_embedding(query) if not embedState else np.array(query).reshape(1, -1)
+            query_embedding = np.array(query).reshape(1, -1)
+
+        # Wait for Supabase & Process Personalization
+        if sb_future:
+            response, sb_time = sb_future.result()
+            print(f"   ⏱️ Supabase Likes Fetch (Async wait): {sb_time*1000:.2f}ms")
+            
+            if response.data:
+                print(f"✅ {len(response.data)} liked papers found for user {user_id}")
+                perf_profile_start = time.perf_counter()
+                papers = [
+                    {
+                        "paper_id": row["paper_id"],
+                        "created_at": row["created_at"],
+                        "embedding": row["new_papers"]["embedding"]
+                    }
+                    for row in response.data
+                ]
+                user_profile_embeddings = construct_user_profile(papers)
+                print(f"   ⏱️ Personalization Profile Build: {(time.perf_counter() - perf_profile_start)*1000:.2f}ms")
+                
+                # ✨ Blend current query and user profile
+                query_embedding = 0.9 * query_embedding + 0.1 * user_profile_embeddings
+            else:
+                print("⚠️ No liked papers found. Continuing with regular search.")
+        else:
+            print("Guest user: skipping personalization.")
 
     #return None
 
