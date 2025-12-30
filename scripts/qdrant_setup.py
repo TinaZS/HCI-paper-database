@@ -20,7 +20,7 @@ COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "papers_fast")
 EMBEDDED_DATA_DIR = "embedded_data"
 CHECKPOINT_FILE = f"upload_progress_{COLLECTION_NAME}.json"
 REGISTRY_FILE = "shard_registry.json"
-UPLOAD_BATCH_SIZE = 200  
+UPLOAD_BATCH_SIZE = 100 
 SIZE_LIMIT_VECTORS = 560_000  # Reduced safety threshold to 560k
 TEST_MODE = False
 
@@ -88,8 +88,8 @@ def connect_to_shard(shard_index):
     sys.stdout.write(f"🔌 Connecting to {instance['name']}... ")
     sys.stdout.flush()
     
-    try:
-        client = QdrantClient(url=instance["url"], api_key=instance["api_key"])
+    try:    
+        client = QdrantClient(url=instance["url"], api_key=instance["api_key"], timeout=60.0)
         
         # Check/Create collection
         colls = client.get_collections().collections
@@ -177,6 +177,10 @@ def upload_to_qdrant():
                 papers_for_current = []
                 papers_for_next = papers
 
+            # Capture the starting ID for this batch to ensure sequential IDs
+            # regardless of how many micro-batches we flush in the loop.
+            batch_base_id = papers_uploaded
+
             # --- PROCESS CURRENT SHARD ---
             if len(papers_for_current) > 0:
                 points = []
@@ -187,7 +191,7 @@ def upload_to_qdrant():
                         authors = authors[:3] + ["et al."]
 
                     points.append(PointStruct(
-                        id=papers_uploaded + i,
+                        id=batch_base_id + i, # Use stable base ID
                         vector=paper["embedding"],
                         payload={
                             "paper_id": paper["id"], "title": paper["title"], "authors": authors,
@@ -208,6 +212,11 @@ def upload_to_qdrant():
 
             # --- PROCESS SPILLOVER ---
             if len(papers_for_next) > 0:
+                # Update base ID for next segment because we just exhausted papers_for_current
+                # actually, papers_uploaded has already been incremented by the previous loop,
+                # so the new papers_uploaded is the correct base for the next segment.
+                spillover_base_id = papers_uploaded
+
                 if current_shard_idx + 1 < len(QDRANT_INSTANCES):
                     print(f"\n📦 Shard {current_shard_idx+1} full. Spilling {len(papers_for_next)} papers to next...")
                     current_shard_idx += 1
@@ -225,7 +234,7 @@ def upload_to_qdrant():
                             authors = authors[:3] + ["et al."]
 
                         points.append(PointStruct(
-                            id=papers_uploaded + i,
+                            id=spillover_base_id + i, # Use new stable base ID
                             vector=paper["embedding"],
                             payload={
                                 "paper_id": paper["id"], "title": paper["title"], "authors": authors,

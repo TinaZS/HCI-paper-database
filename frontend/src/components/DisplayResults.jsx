@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import categoriesData from "./categories.json";
 import ReactionButton from "./ReactionButton";
 import { useAuth } from "../AuthContext";
@@ -17,7 +17,7 @@ export default function DisplayResults({
 }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [selectedPaper, setSelectedPaper] = useState(null);
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [visibleResults, setVisibleResults] = useState([]);
   const [reactions, setReactions] = useState({});
 
@@ -81,6 +81,29 @@ export default function DisplayResults({
     setReactions((prev) => ({ ...prev, [paperId]: newReaction }));
   };
 
+  const trackSignal = async (paperId, eventType, duration = 0, metadata = {}) => {
+    if (!user || !token) return;
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      await fetch(`${API_BASE_URL}/signal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "XSessionName": session_name
+        },
+        body: JSON.stringify({
+          paper_id: paperId,
+          event_type: eventType,
+          duration: duration,
+          metadata: metadata
+        })
+      });
+    } catch (e) {
+      console.error("Signal error:", e);
+    }
+  };
+
   const sortedResults = [...visibleResults].sort((a, b) => {
     if (sortBy === "score")
       return (b.similarity_score || 0) - (a.similarity_score || 0);
@@ -101,10 +124,10 @@ export default function DisplayResults({
         {resultsToRender.map((paper) => {
           const formattedDate = paper.datePublished
             ? new Date(paper.datePublished).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
             : "Unknown";
 
           return (
@@ -115,7 +138,10 @@ export default function DisplayResults({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              onClick={() => setSelectedPaper(paper)}
+              onClick={() => {
+                setSelectedPaper(paper);
+                trackSignal(paper.paper_id, "expand", 0, { type: "modal_open" });
+              }}
             >
               <div className="p-6 border border-[#E5D0FA] bg-white/70 rounded-xl shadow-lg relative transition-all duration-300 hover:shadow-xl w-full pb-12 space-y-3 cursor-pointer">
                 <div className="flex justify-between items-start">
@@ -168,6 +194,7 @@ export default function DisplayResults({
                   onClick={(e) => {
                     e.stopPropagation();
                     onSearch(paper.embedding, 6, true);
+                    trackSignal(paper.paper_id, "find_similar");
                   }}
                   className="mt-3 py-1.5 px-3 text-sm bg-[#998CC8] text-white hover:bg-[#714ea6] font-medium rounded-md shadow hover:bg-[#A27D5C] transition duration-150"
                 >
@@ -188,14 +215,29 @@ export default function DisplayResults({
       </AnimatePresence>
 
       {selectedPaper && (
-        <Modal paper={selectedPaper} onClose={() => setSelectedPaper(null)} />
+        <Modal
+          paper={selectedPaper}
+          onClose={() => setSelectedPaper(null)}
+          trackSignal={trackSignal}
+        />
       )}
     </div>
   );
 }
 
-function Modal({ paper, onClose }) {
+function Modal({ paper, onClose, trackSignal }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
+  const startTimeRef = useRef(Date.now());
+
+  // Track dwell time on unmount (closing modal)
+  useEffect(() => {
+    return () => {
+      const duration = Date.now() - startTimeRef.current;
+      if (duration > 2000) { // Only log if viewed for > 2 seconds
+        trackSignal(paper.paper_id, "dwell", duration);
+      }
+    };
+  }, [paper.paper_id, trackSignal]);
 
   const categoryMap = Object.values(categoriesData).reduce(
     (acc, sub) => ({ ...acc, ...sub }),
@@ -265,6 +307,7 @@ function Modal({ paper, onClose }) {
           target="_blank"
           rel="noopener noreferrer"
           className="text-[#AB43BD] hover:underline text-sm font-medium"
+          onClick={() => trackSignal(paper.paper_id, "click", 0, { type: "link_out" })}
         >
           Read More →
         </a>

@@ -5,7 +5,7 @@ import time
 FAISS_INDEX_PATH = "faiss_index.index"
 
 #add user query as an input to search
-def user_search(query, index, numPapers, embedState, topic, user_id, qdrant_clients=None):
+def user_search(query, index, numPapers, embedState, topic, user_id, qdrant_clients=None, session_id=None):
  
     if not index and not qdrant_clients:
         print("ERROR: No search index (FAISS or Qdrant) available")
@@ -25,7 +25,7 @@ def user_search(query, index, numPapers, embedState, topic, user_id, qdrant_clie
 
     print(f"Numpapers is {numPapers}")
     # Pass qdrant_clients to the search function
-    results = search(query, index, numPapers, embedState, topic, user_id, qdrant_clients=qdrant_clients)
+    results = search(query, index, numPapers, embedState, topic, user_id, qdrant_clients=qdrant_clients, session_id=session_id)
     print(f"LenResult is {len(results)}")
 
     end_time = time.time()

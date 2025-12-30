@@ -57,7 +57,7 @@ def hydrate_papers(client, point_ids):
             collection_name=QDRANT_COLLECTION,
             ids=point_ids,
             with_payload=True,
-            with_vectors=False
+            with_vectors=True
         )
         return results
     except Exception as e:
@@ -129,6 +129,9 @@ def qdrant_search_parallel(query_embedding, clients, k=6, topic=""):
         # Map back to result format
         for point in hydrated_points:
             paper = point.payload
+            if point.vector is None:
+                print(f"⚠️ Warning: Point {point.id} has no-vector data in Qdrant (with_vectors=True)")
+            paper["embedding"] = point.vector # Store vector for "Find Similar" logic
             # Reinject the score (retrieve() doesn't return score, we have it from step 1)
             # Find original score
             original_score = next(s for p, s, i in top_winners if p == point.id)
@@ -145,6 +148,19 @@ def qdrant_search_parallel(query_embedding, clients, k=6, topic=""):
             # Formatting
             cats = paper.get("categories", [])
             paper["categories"] = cats.split() if isinstance(cats, str) else cats
+            
+            # Ensure authors is a list
+            authors = paper.get("authors", [])
+            if isinstance(authors, str):
+                if authors.startswith("[") and authors.endswith("]"):
+                    import ast
+                    try:
+                        paper["authors"] = ast.literal_eval(authors)
+                    except:
+                        paper["authors"] = [authors]
+                else:
+                    paper["authors"] = [authors]
+            
             if "published" in paper:
                 paper["published_date"] = paper["published"]
             
@@ -156,7 +172,7 @@ def qdrant_search_parallel(query_embedding, clients, k=6, topic=""):
 
 
 #add user id as an input to search
-def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clients=None):
+def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clients=None, session_id=None):
     """
     Search using either FAISS (if index provided) or Qdrant (if qdrant_clients provided).
     Converts a text query to an embedding and fetches results.
@@ -174,12 +190,47 @@ def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clien
         # 2. Start Supabase Personalization (if logged in)
         sb_future = None
         if user_id:
-            print("🔐 Logged-in user – attempting to personalize")
-            def fetch_likes(uid):
-                sb_start = time.perf_counter()
-                res = supabase.table("likes").select("paper_id, reaction_type,created_at, new_papers(title, authors, abstract, published_date, link, categories, embedding)").eq("user_id", uid).eq("reaction_type", "like").execute()
-                return res, time.perf_counter() - sb_start
-            sb_future = executor.submit(fetch_likes, user_id)
+            print(f"🔐 Logged-in user – attempting to personalize (Session: {session_id})")
+            
+            def fetch_signals_and_build_profile(uid, sid):
+                start = time.perf_counter()
+                try:
+                    # A. Fetch User Events (Implicit + Explicit)
+                    events = supabase.table("user_events").select("*").eq("user_id", uid).execute()
+                    if not events.data: 
+                        return None, (time.perf_counter() - start)
+
+                    # B. Fetch Embeddings for unique papers in history
+                    paper_ids = list(set(e["paper_id"] for e in events.data))
+                    if not paper_ids: return None, (time.perf_counter() - start)
+                    
+                    # Safe batching could be added here if > 100 ids
+                    embed_res = supabase.table("new_papers").select("paper_id, embedding").in_("paper_id", paper_ids).execute()
+                    embedding_map = {p["paper_id"]: p["embedding"] for p in embed_res.data}
+
+                    # C. Merge Event Metadata with Embeddings
+                    profile_inputs = []
+                    for event in events.data:
+                        pid = event["paper_id"]
+                        if pid in embedding_map:
+                            profile_inputs.append({
+                                "embedding": embedding_map[pid],
+                                "created_at": event["created_at"],
+                                "weight": event["weight"], # This comes from the DB now
+                                "session_id": event.get("session_id")
+                            })
+                    
+                    if not profile_inputs: return None, (time.perf_counter() - start)
+
+                    # D. Build Weighted Vector
+                    vector = construct_user_profile(profile_inputs, current_session_id=sid)
+                    return vector, (time.perf_counter() - start)
+                    
+                except Exception as e:
+                    print(f"⚠️ Personalization error: {e}")
+                    return None, 0
+
+            sb_future = executor.submit(fetch_signals_and_build_profile, user_id, session_id)
 
         # Wait for Azure
         emb_start_perf = time.perf_counter()
@@ -191,27 +242,16 @@ def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clien
 
         # Wait for Supabase & Process Personalization
         if sb_future:
-            response, sb_time = sb_future.result()
-            print(f"   ⏱️ Supabase Likes Fetch (Async wait): {sb_time*1000:.2f}ms")
+            user_profile_vector, sb_time = sb_future.result()
+            print(f"   ⏱️ Signal Processing & Profile Build: {sb_time*1000:.2f}ms")
             
-            if response.data:
-                print(f"✅ {len(response.data)} liked papers found for user {user_id}")
-                perf_profile_start = time.perf_counter()
-                papers = [
-                    {
-                        "paper_id": row["paper_id"],
-                        "created_at": row["created_at"],
-                        "embedding": row["new_papers"]["embedding"]
-                    }
-                    for row in response.data
-                ]
-                user_profile_embeddings = construct_user_profile(papers)
-                print(f"   ⏱️ Personalization Profile Build: {(time.perf_counter() - perf_profile_start)*1000:.2f}ms")
-                
+            if user_profile_vector is not None:
+                print(f"✅ User profile built successfully.")
                 # ✨ Blend current query and user profile
-                query_embedding = 0.9 * query_embedding + 0.1 * user_profile_embeddings
+                # We can tune this alpha. 0.15 is safer for "Implicit" signals than 0.1
+                query_embedding = 0.85 * query_embedding + 0.15 * user_profile_vector
             else:
-                print("⚠️ No liked papers found. Continuing with regular search.")
+                print("⚠️ No signals found or error building profile. Using raw query.")
         else:
             print("Guest user: skipping personalization.")
 

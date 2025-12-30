@@ -109,11 +109,12 @@ export default function App() {
       const data = await response.json();
       const savedSession = localStorage.getItem("activeSession");
 
-      if (savedSession && data.sessions.includes(savedSession)) {
+      const sessionNames = data.sessions.map(s => s.session_name);
+      if (savedSession && sessionNames.includes(savedSession)) {
         setActiveSession(savedSession);
       } else if (data.sessions.length > 0) {
-        setActiveSession(data.sessions[0]);
-        localStorage.setItem("activeSession", data.sessions[0]);
+        setActiveSession(data.sessions[0].session_name);
+        localStorage.setItem("activeSession", data.sessions[0].session_name);
       } else {
         setActiveSession(null);
       }
@@ -171,9 +172,11 @@ export default function App() {
       return;
     }
 
-    setSessions((prev) => [...prev, newSessionName]);
-    setActiveSession(newSessionName);
-    localStorage.setItem("activeSession", newSessionName);
+    // We'll wait for the backend to confirm before adding to state
+    // setSessions((prev) => [...prev, newSessionName]); 
+    // setActiveSession(newSessionName);
+    // localStorage.setItem("activeSession", newSessionName);
+    const sessionToCreate = newSessionName;
     setNewSessionName("");
 
     try {
@@ -203,6 +206,13 @@ export default function App() {
 
       const data = await response.json();
       console.log("Session created in backend:", data);
+
+      if (data.data && data.data[0]) {
+        const newSessionObj = data.data[0];
+        setSessions((prev) => [...prev, newSessionObj]);
+        setActiveSession(newSessionObj.session_name);
+        localStorage.setItem("activeSession", newSessionObj.session_name);
+      }
     } catch (error) {
       console.error("Error creating session:", error);
     }
@@ -317,14 +327,14 @@ export default function App() {
       }
 
       console.log("✅ Deleted:", result);
-      const updatedSessions = sessions.filter((s) => s !== sessionName);
+      const updatedSessions = sessions.filter((s) => s.session_name !== sessionName);
       setSessions(updatedSessions);
 
       if (activeSession === sessionName) {
-        const newActive =
-          updatedSessions.length > 0 ? updatedSessions[0] : null;
-        setActiveSession(newActive);
-        localStorage.setItem("activeSession", newActive);
+        const newActiveObj = updatedSessions.length > 0 ? updatedSessions[0] : null;
+        const newActiveName = newActiveObj ? newActiveObj.session_name : null;
+        setActiveSession(newActiveName);
+        localStorage.setItem("activeSession", newActiveName);
       }
 
       setShowPopup(null);
@@ -369,9 +379,8 @@ export default function App() {
 
       {/* Sidebar Container - Fixed width that doesn't expand onto the page */}
       <div
-        className={`w-64 h-full transition-transform duration-300 ease-in-out ${
-          sidebarVisible ? "translate-x-0" : "-translate-x-full"
-        } fixed top-0 left-0 z-10`}
+        className={`w-64 h-full transition-transform duration-300 ease-in-out ${sidebarVisible ? "translate-x-0" : "-translate-x-full"
+          } fixed top-0 left-0 z-10`}
       >
         <div className="bg-[#F3ECFF] text-[#4F106E] font-sans h-full flex flex-col w-full border-r border-[#C8A2F7] shadow-md">
           <div className="p-4 flex justify-between items-center border-b">
@@ -406,44 +415,27 @@ export default function App() {
               <ul className="space-y-1">
                 {sessions.map((session) => (
                   <li
-                    key={session}
-                    className={`cursor-pointer px-3 py-2 rounded-md flex justify-between items-center transition-colors ${
-                      activeSession === session
-                        ? "bg-[#C8A2F7] text-white font-semibold"
-                        : "hover:bg-[#E0C8FA]"
-                    }`}
-                    onClick={() => handleSessionChange(session)}
+                    key={session.id}
+                    className={`cursor-pointer px-3 py-2 rounded-md flex justify-between items-center transition-colors ${activeSession === session.session_name
+                      ? "bg-[#C8A2F7] text-white font-semibold"
+                      : "hover:bg-[#E0C8FA]"
+                      }`}
+                    onClick={() => handleSessionChange(session.session_name)}
                     style={{ position: "relative" }}
                   >
-                    {/* Show input when renaming */}
-                    {/* {renamingSession === session ? (
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 rounded-full border border-[#C8A2F7] text-[#4F106E] bg-white placeholder:text-[#B083D6] focus:outline-none focus:ring-2 focus:ring-[#C8A2F7] transition"
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onBlur={() => renameSession(session)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && renameSession(session)
-                        }
-                        autoFocus
-                      />
-                    ) : (
-                      <span>{session}</span>
-                    )} */}
-                    <span>{session}</span>
+                    <span>{session.session_name}</span>
                     <button
                       className="cursor-pointer px-2 text-gray-500 hover:text-black"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowPopup(showPopup === session ? null : session);
+                        setShowPopup(showPopup === session.id ? null : session.id);
                       }}
                     >
                       ⋮
                     </button>
 
                     {/* Popup Menu */}
-                    {showPopup === session && (
+                    {showPopup === session.id && (
                       <div className="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg p-2 flex flex-col gap-2 w-48 border border-gray-200 z-10">
                         {/* <button
                           className="text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none"
@@ -456,11 +448,10 @@ export default function App() {
                           Rename
                         </button> */}
                         <button
-                          className={`text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                            sessions.length === 1
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
+                          className={`text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 ${sessions.length === 1
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                            }`}
                           onClick={() => {
                             if (sessions.length === 1) return; // Don't allow delete
                             setShowPopup(null);
@@ -534,9 +525,8 @@ export default function App() {
 
       {/* Main content area with margin adjustment */}
       <div
-        className={`transition-all duration-300 ease-in-out flex-grow ${
-          sidebarVisible ? "ml-64" : "ml-0"
-        }`}
+        className={`transition-all duration-300 ease-in-out flex-grow ${sidebarVisible ? "ml-64" : "ml-0"
+          }`}
       >
         <div
           className="min-h-screen w-full bg-cover bg-center bg-no-repeat flex flex-col items-center px-4"
@@ -661,7 +651,7 @@ export default function App() {
           </div>
         </div>
       </div>
-      
+
       {/* Floating RAG Chatbot */}
       <FloatingChatbot />
     </div>

@@ -104,11 +104,13 @@ def search():
     data = request.get_json()
     useEmbeddings=data.get("embedState")
 
-    if useEmbeddings==False:
+    if not useEmbeddings:
         query = data.get("query", "").strip()
     else:
-        query=data.get("query","")
-    print("query is ",query)
+        query = data.get("query", "")
+    
+    log_query = f"LIST (len={len(query)})" if isinstance(query, list) else query
+    print(f"query is {log_query}")
 
     topic=data.get("topic")
     print("TOPIC IS ",topic)
@@ -133,17 +135,27 @@ def search():
         numPapers = int(numPapers)
     print("next query checkpoint")
 
-    if not query:
-        print("bad query")
-        return jsonify({"error": "No query provided"}), 400
+    # If it's a list, check if it has content. If it's a string, check if not empty.
+    is_empty = False
+    if isinstance(query, list):
+        is_empty = (len(query) == 0)
+    elif not query:
+        is_empty = True
+
+    if is_empty:
+        print(f"bad query detected: {query} (type: {type(query)})")
+        return jsonify({"error": "No query provided or empty vector"}), 400
 
     start_time = time.time()  # Start timing for search
     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)) + f".{int((start_time % 1) * 1000):03d}"
     print(f"Timestamp at user_search start: {start_timestamp}")
 
     
+    # Extract Session ID for boosting
+    session_id = request.headers.get("XSessionName")
+
     # Pass qdrant_clients to the search logic
-    results = user_search(query, index, numPapers, useEmbeddings, topic, user_id, qdrant_clients=qdrant_clients)
+    results = user_search(query, index, numPapers, useEmbeddings, topic, user_id, qdrant_clients=qdrant_clients, session_id=session_id)
 
     end_time = time.time()  # Calculate search time
     end_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)) + f".{int(((end_time) % 1) * 1000):03d}"
@@ -155,17 +167,17 @@ def extract_user_id_from_token():
     """Extract user_id from Authorization header."""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        return None, jsonify({"error": "Missing or invalid token"}), 401
+        return None, (jsonify({"error": "Missing or invalid token"}), 401)
 
     token = auth_header.split("Bearer ")[1]
     try:
         decoded_token = jwt.decode(token, options={"verify_signature": False})  # Decode the JWT
         user_id = decoded_token.get("sub")
         if not user_id:
-            return None, jsonify({"error": "Invalid token"}), 401
+            return None, (jsonify({"error": "Invalid token"}), 401)
         return user_id, None  # Return user_id if successful
     except Exception as e:
-        return None, jsonify({"error": "Invalid token", "details": str(e)}), 401
+        return None, (jsonify({"error": "Invalid token", "details": str(e)}), 401)
 
 
 @app.route("/rag_query", methods=["POST"])
@@ -399,6 +411,68 @@ def react_to_paper():
         return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 
+
+# --- Signal Telemetry ---
+SIGNAL_WEIGHTS = {
+    "like": 10.0,
+    "dislike": -15.0,
+    "save": 8.0,
+    "find_similar": 5.0,
+    "click": 3.0,
+    "expand": 1.0,
+    "dwell": 0.0 # Dynamic based on duration
+}
+
+@app.route("/signal", methods=["POST"])
+def track_signal():
+    """
+    Log implicit user signals (clicks, dwells, etc.) for the recommendation engine.
+    """
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response
+
+        data = request.get_json()
+        paper_id = data.get("paper_id")
+        event_type = data.get("event_type")
+        duration_ms = data.get("duration", 0)
+        session_id = request.headers.get("XSessionName") # Or from body
+        metadata = data.get("metadata", {})
+
+        if not paper_id or not event_type:
+            return jsonify({"error": "Missing paper_id or event_type"}), 400
+
+        # Calculate Weight
+        weight = SIGNAL_WEIGHTS.get(event_type, 0.0)
+        
+        # Dynamic Dwell Time Logic
+        if event_type == "dwell":
+            if duration_ms > 30000: # > 30 seconds
+                weight = 4.0
+            elif duration_ms > 10000: # > 10 seconds
+                weight = 1.0
+            else:
+                return jsonify({"message": "Ignored (too short)"}), 200
+
+        # Async Insert (Fire and forget from client perspective)
+        # We use strict await/execute here for simplicity in Flask
+        supabase.table("user_events").insert({
+            "user_id": user_id,
+            "paper_id": paper_id,
+            "event_type": event_type,
+            "duration_ms": duration_ms,
+            "weight": weight,
+            "metadata": metadata,
+            "session_id": session_id
+        }).execute()
+
+        return jsonify({"message": "Signal recorded", "weight": weight}), 200
+
+    except Exception as e:
+        print(f"⚠️ Signal error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/create-session", methods=["POST"])
 def create_session():
     data = request.get_json()
@@ -482,10 +556,7 @@ def get_user_sessions():
         # Sort by 'created_at' (oldest first)
         sorted_sessions = sorted(sessions, key=lambda x: x["created_at"])
 
-        # Extract session names
-        session_names = [session["session_name"] for session in sorted_sessions]
-
-        return jsonify({"sessions": session_names})
+        return jsonify({"sessions": sorted_sessions})
 
     except Exception as e:
         print(f"Error fetching user sessions:", str(e))
