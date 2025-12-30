@@ -250,45 +250,44 @@ def rag_query():
         return jsonify({"answer": f"Something went wrong: {str(e)}"}), 500
 
 
-@app.route("/like", methods=["POST"])
-def like_paper():
-    try:
-        user_id, error_response = extract_user_id_from_token()
-        if error_response:
-            return error_response  # Return error if token is invalid
 
-        data = request.get_json()
-        paper_id = data.get("paper_id")
-        if not paper_id:
-            return jsonify({"error": "Missing paper_id"}), 400
 
-        response = supabase.table("likes").insert({"user_id": user_id, "paper_id": paper_id}).execute()
-        return jsonify({"message": "Paper liked successfully!"}), 200
 
-    except Exception as e:
-        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
+def papers_from_events(events):
+    """Utility to hydrate paper details from Qdrant using a list of user_events."""
+    if not events: return []
+    
+    # Extract unique Qdrant IDs
+    q_ids = list(set(e["qdrant_id"] for e in events if e.get("qdrant_id")))
+    if not q_ids: return []
 
-@app.route("/unlike", methods=["POST"])
-def unlike_paper():
-    try:
-        user_id, error_response = extract_user_id_from_token()
-        if error_response:
-            return error_response  # Return error if token is invalid
+    # Map for easy lookup after hydration
+    papers = []
+    
+    # Re-use the existing hydration logic (needs access to clients and hydrate_papers)
+    # Since server.py has qdrant_clients, we can use them
+    for client in qdrant_clients:
+        hydrated = hydrate_papers(client, q_ids)
+        for point in hydrated:
+            p = point.payload
+            papers.append({
+                "paper_id": p.get("paper_id"),
+                "qdrant_id": point.id,
+                "title": p.get("title"),
+                "authors": p.get("authors", []),
+                "abstract": p.get("abstract", ""),
+                "datePublished": p.get("published_date"),
+                "link": p.get("link"),
+                "categories": p.get("categories", []),
+                "embedding": point.vector
+            })
+            # Remove from q_ids once found to avoid redundant work across shards
+            if point.id in q_ids:
+                q_ids.remove(point.id)
+        
+        if not q_ids: break
 
-        data = request.get_json()
-        paper_id = data.get("paper_id")
-        if not paper_id:
-            return jsonify({"error": "Missing paper_id"}), 400
-
-        response = supabase.table("likes").delete().match({"user_id": user_id, "paper_id": paper_id}).execute()
-
-        if hasattr(response, "data") and response.data is not None:
-            return jsonify({"message": "Like removed successfully"}), 200
-        else:
-            return jsonify({"error": "Failed to remove like"}), 500
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return papers
 
 @app.route("/get_papers_by_reaction", methods=["GET"])
 def get_papers_by_reaction():
@@ -320,37 +319,22 @@ def get_papers_by_reaction():
         print("session name is ",session_name)
 
 
-        # Query Supabase filtering by reaction type
+        # Query user_events for the specific reaction type
         response = (
             supabase
-            .table("likes")  # This table stores likes and dislikes
-            .select("paper_id, reaction_type, new_papers(title, authors, abstract, published_date, link, categories, embedding)")
+            .table("user_events")
+            .select("paper_id, qdrant_id")
             .eq("user_id", user_id)
-            .eq("reaction_type", reaction_type)  # Filter only for like/dislike
-            .eq("session_name", session_name)
+            .eq("event_type", reaction_type)
+            .eq("session_id", session_name)
             .execute()
         )
 
-        #print(response)
-
         if not response or not hasattr(response, "data"):
-            print(f"Supabase response issue for {reaction_type}:", response)
             return jsonify({"papers": []}), 200
 
-        # Extract full paper details
-        papers = [
-            {
-                "paper_id": row["paper_id"],
-                "title": row["new_papers"]["title"],
-                "authors": row["new_papers"]["authors"],
-                "abstract": row["new_papers"].get("abstract", "No abstract available"),
-                "datePublished": row["new_papers"].get("published_date", "Unknown"),
-                "link": row["new_papers"]["link"],
-                "categories": row["new_papers"]["categories"],
-                "embedding": row["new_papers"]["embedding"]
-            }
-            for row in response.data
-        ]
+        # Hydrate from Qdrant
+        papers = papers_from_events(response.data)
 
         #print(f"User {user_id} {reaction_type}d papers:", papers)
         print("Returning ", len(papers))
@@ -371,8 +355,9 @@ def react_to_paper():
 
         data = request.get_json()
         paper_id = data.get("paper_id")
+        qdrant_id = data.get("qdrant_id")
         reaction_type = data.get("reaction_type")  # 'like' or 'dislike'
-        session_name=data.get("user_session")
+        session_name = data.get("user_session")
 
         response= (supabase.table("user_sessions").select("user_id"))
 
@@ -380,30 +365,40 @@ def react_to_paper():
         if not paper_id or reaction_type not in ["like", "dislike"]:
             return jsonify({"error": "Missing or invalid paper_id/reaction_type"}), 400
 
-        # ✅ Check if user has already reacted
+        # ✅ Check if user has already reacted (using user_events now)
         existing_reaction = (
-            supabase.table("likes")
-            .select("reaction_type")
-            .match({"user_id": user_id, "paper_id": paper_id,"session_name":session_name})
+            supabase.table("user_events")
+            .select("*")
+            .match({"user_id": user_id, "paper_id": paper_id, "session_id": session_name})
+            .in_("event_type", ["like", "dislike"])
             .execute()
         )
 
-        if existing_reaction.data:
-            existing_type = existing_reaction.data[0]["reaction_type"]
+        weight = 10.0 if reaction_type == "like" else -15.0
 
-            if existing_type == reaction_type:
+        if existing_reaction.data:
+            existing_event = existing_reaction.data[0]
+            if existing_event["event_type"] == reaction_type:
                 # ✅ Remove reaction if it's the same (toggle behavior)
-                supabase.table("likes").delete().match({"user_id": user_id, "paper_id": paper_id,"session_name":session_name}).execute()
+                supabase.table("user_events").delete().eq("id", existing_event["id"]).execute()
                 return jsonify({"message": f"Removed {reaction_type} reaction"}), 200
             else:
                 # ✅ Update reaction if user switches from like <-> dislike
-                supabase.table("likes").update({"reaction_type": reaction_type}).match({"user_id": user_id, "paper_id": paper_id,"session_name":session_name}).execute()
+                supabase.table("user_events").update({
+                    "event_type": reaction_type,
+                    "weight": weight
+                }).eq("id", existing_event["id"]).execute()
                 return jsonify({"message": f"Updated reaction to {reaction_type}"}), 200
 
-        print("SESSION NAME IS ",session_name)
-
         # ✅ Insert new reaction
-        supabase.table("likes").insert({"user_id": user_id, "paper_id": paper_id, "reaction_type": reaction_type,"session_name":session_name}).execute()
+        supabase.table("user_events").insert({
+            "user_id": user_id, 
+            "paper_id": paper_id, 
+            "qdrant_id": qdrant_id,
+            "event_type": reaction_type,
+            "weight": weight,
+            "session_id": session_name
+        }).execute()
         return jsonify({"message": f"Paper {reaction_type}d successfully!"}), 200
 
     except Exception as e:
@@ -435,6 +430,8 @@ def track_signal():
 
         data = request.get_json()
         paper_id = data.get("paper_id")
+        qdrant_id = data.get("qdrant_id") # NEW
+        print(f"📡 Received Signal: paper_id={paper_id}, qdrant_id={qdrant_id}, type={data.get('event_type')}")
         event_type = data.get("event_type")
         duration_ms = data.get("duration", 0)
         session_id = request.headers.get("XSessionName") # Or from body
@@ -460,6 +457,7 @@ def track_signal():
         supabase.table("user_events").insert({
             "user_id": user_id,
             "paper_id": paper_id,
+            "qdrant_id": qdrant_id, # Store Qdrant ID for fast vector retrieval
             "event_type": event_type,
             "duration_ms": duration_ms,
             "weight": weight,
@@ -522,12 +520,11 @@ def delete_session():
 
         print(f"Supabase Response: {response}")  # Log the response to inspect it
 
-        response2 = supabase.table("likes").delete().match({
+        # Also delete all associated events for this session
+        supabase.table("user_events").delete().match({
             "user_id": user_id,
-            "session_name":session_name
+            "session_id": session_name
         }).execute()
-
-        print(f"Supabase Response: {response2}")  # Log the response to inspect it
 
         if not response.data:  # Check if no data was returned, meaning no session was deleted
             return jsonify({"error": "Session not found or failed to delete"}), 404

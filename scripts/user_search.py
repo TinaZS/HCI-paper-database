@@ -40,6 +40,7 @@ def user_search(query, index, numPapers, embedState, topic, user_id, qdrant_clie
     return [
         {
             "paper_id": result.get("paper_id", ""),
+            "qdrant_id": result.get("qdrant_id"), # NEW: Include the Qdrant ID
             "title": result.get("title", "No Title"),
             "authors": result.get("authors", []),
             "abstract": result.get("abstract", "No abstract available"),

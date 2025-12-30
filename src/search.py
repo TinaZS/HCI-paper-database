@@ -59,6 +59,10 @@ def hydrate_papers(client, point_ids):
             with_payload=True,
             with_vectors=True
         )
+        # Inject the internal point ID into the payload so the frontend can track it
+        for res in results:
+            if res.payload is not None:
+                res.payload["qdrant_id"] = res.id
         return results
     except Exception as e:
         print(f"⚠️ Hydration error: {e}")
@@ -136,6 +140,7 @@ def qdrant_search_parallel(query_embedding, clients, k=6, topic=""):
             # Find original score
             original_score = next(s for p, s, i in top_winners if p == point.id)
             paper["similarity_score"] = original_score
+            paper["qdrant_id"] = point.id # Ensure qdrant_id is present
 
             # Decompress
             if paper.get("compressed"):
@@ -200,23 +205,28 @@ def search(query, index, k=6, embedState=False,topic="",user_id="", qdrant_clien
                     if not events.data: 
                         return None, (time.perf_counter() - start)
 
-                    # B. Fetch Embeddings for unique papers in history
-                    paper_ids = list(set(e["paper_id"] for e in events.data))
-                    if not paper_ids: return None, (time.perf_counter() - start)
+                    # B. Fetch Embeddings for unique papers in history from Qdrant
+                    # Note: We prioritize qdrant_id for direct hydration
+                    qdrant_history_ids = list(set(e["qdrant_id"] for e in events.data if e.get("qdrant_id")))
                     
-                    # Safe batching could be added here if > 100 ids
-                    embed_res = supabase.table("new_papers").select("paper_id, embedding").in_("paper_id", paper_ids).execute()
-                    embedding_map = {p["paper_id"]: p["embedding"] for p in embed_res.data}
+                    embedding_map = {}
+                    if qdrant_history_ids and qdrant_clients:
+                        # Hydrate from all shards (broad but necessary for history)
+                        for q_client in qdrant_clients:
+                            shard_res = hydrate_papers(q_client, qdrant_history_ids)
+                            for res in shard_res:
+                                if res.vector is not None:
+                                    embedding_map[res.id] = res.vector
 
                     # C. Merge Event Metadata with Embeddings
                     profile_inputs = []
                     for event in events.data:
-                        pid = event["paper_id"]
-                        if pid in embedding_map:
+                        qid = event.get("qdrant_id")
+                        if qid in embedding_map:
                             profile_inputs.append({
-                                "embedding": embedding_map[pid],
+                                "embedding": embedding_map[qid],
                                 "created_at": event["created_at"],
-                                "weight": event["weight"], # This comes from the DB now
+                                "weight": event["weight"], # This comes from the DB
                                 "session_id": event.get("session_id")
                             })
                     

@@ -81,7 +81,7 @@ export default function DisplayResults({
     setReactions((prev) => ({ ...prev, [paperId]: newReaction }));
   };
 
-  const trackSignal = async (paperId, eventType, duration = 0, metadata = {}) => {
+  const trackSignal = async (paperId, eventType, duration = 0, qdrantId = null, metadata = {}) => {
     if (!user || !token) return;
     try {
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -94,6 +94,7 @@ export default function DisplayResults({
         },
         body: JSON.stringify({
           paper_id: paperId,
+          qdrant_id: qdrantId,
           event_type: eventType,
           duration: duration,
           metadata: metadata
@@ -140,7 +141,7 @@ export default function DisplayResults({
               transition={{ duration: 0.3 }}
               onClick={() => {
                 setSelectedPaper(paper);
-                trackSignal(paper.paper_id, "expand", 0, { type: "modal_open" });
+                trackSignal(paper.paper_id, "expand", 0, paper.qdrant_id, { type: "modal_open" });
               }}
             >
               <div className="p-6 border border-[#E5D0FA] bg-white/70 rounded-xl shadow-lg relative transition-all duration-300 hover:shadow-xl w-full pb-12 space-y-3 cursor-pointer">
@@ -194,7 +195,7 @@ export default function DisplayResults({
                   onClick={(e) => {
                     e.stopPropagation();
                     onSearch(paper.embedding, 6, true);
-                    trackSignal(paper.paper_id, "find_similar");
+                    trackSignal(paper.paper_id, "find_similar", 0, paper.qdrant_id);
                   }}
                   className="mt-3 py-1.5 px-3 text-sm bg-[#998CC8] text-white hover:bg-[#714ea6] font-medium rounded-md shadow hover:bg-[#A27D5C] transition duration-150"
                 >
@@ -202,6 +203,7 @@ export default function DisplayResults({
                 </button>
                 <ReactionButton
                   paperId={paper.paper_id}
+                  qdrantId={paper.qdrant_id}
                   onReactionChange={(newReaction) =>
                     handleReactionChange(paper.paper_id, newReaction)
                   }
@@ -234,7 +236,7 @@ function Modal({ paper, onClose, trackSignal }) {
     return () => {
       const duration = Date.now() - startTimeRef.current;
       if (duration > 2000) { // Only log if viewed for > 2 seconds
-        trackSignal(paper.paper_id, "dwell", duration);
+        trackSignal(paper.paper_id, "dwell", duration, paper.qdrant_id);
       }
     };
   }, [paper.paper_id, trackSignal]);
@@ -307,7 +309,7 @@ function Modal({ paper, onClose, trackSignal }) {
           target="_blank"
           rel="noopener noreferrer"
           className="text-[#AB43BD] hover:underline text-sm font-medium"
-          onClick={() => trackSignal(paper.paper_id, "click", 0, { type: "link_out" })}
+          onClick={() => trackSignal(paper.paper_id, "click", 0, paper.qdrant_id, { type: "link_out" })}
         >
           Read More →
         </a>
