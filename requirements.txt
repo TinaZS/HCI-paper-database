@@ -9,7 +9,14 @@ PyJWT==2.10.1
 # Database & Vector Search
 supabase==2.13.0
 qdrant-client==1.16.2
+faiss-cpu==1.10.0
+psycopg2-binary==2.9.10
 
-# Math & AI
+# AI & Personalization
 numpy>=1.26.4
 openai==1.61.0
+langchain-core==0.3.26
+langchain-openai==0.3.27
+
+# Utilities
+tqdm==4.67.1
