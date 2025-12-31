@@ -3,6 +3,7 @@ from flask_cors import CORS
 import sys
 import os
 import requests 
+import faiss  
 import time  # Import time for timing tests
 import os
 import jwt  # PyJWT library to decode JWT tokens
@@ -18,6 +19,9 @@ from qdrant_client import QdrantClient
 
 load_dotenv()
 FRONTEND_URL = os.getenv("FRONTEND_URL")
+
+FAISS_INDEX_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "faiss_index.index"))
+FAISS_STORAGE_URL = "https://xcujrcskstfsjunxfktx.supabase.co/storage/v1/object/public/faiss-index//faiss_index.index"
 
 
 # --- Qdrant Initialization ---
@@ -53,6 +57,39 @@ CORS(app,
 def handle_preflight():
     if request.method == "OPTIONS":
         return jsonify({"message": "CORS preflight request"}), 200
+def download_faiss_index():
+    """Download FAISS index from Supabase Storage (Fallback logic)."""
+    if os.path.exists(FAISS_INDEX_PATH):
+        print("FAISS index already exists. Skipping download.")
+        return 
+
+    # Only download if Qdrant is NOT configured
+    if not qdrant_clients:
+        print("Downloading FAISS index from Supabase...")
+        response = requests.get(FAISS_STORAGE_URL)
+        if response.status_code == 200:
+            with open(FAISS_INDEX_PATH, "wb") as f:
+                f.write(response.content)
+            print("FAISS index downloaded successfully.")
+        else:
+            print("ERROR: Failed to download FAISS index from Supabase")
+    else:
+        print("Qdrant configured - skipping FAISS download.")
+
+
+download_faiss_index()
+
+index = None
+if os.path.exists(FAISS_INDEX_PATH):
+    try:
+        index = faiss.read_index(FAISS_INDEX_PATH)
+        print(f"FAISS index loaded successfully! Total vectors: {index.ntotal}")
+    except Exception as e:
+        print(f"⚠️ FAISS index file found but failed to load: {e}")
+
+if not index and not qdrant_clients:
+    print("❌ CRITICAL: No search backend (FAISS or Qdrant) available!")
+
 
 
 @app.route("/search", methods=["POST"])
