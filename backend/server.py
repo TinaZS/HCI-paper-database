@@ -560,19 +560,48 @@ def get_user_sessions():
     
 
 
-@app.route("/ping", methods=["GET"])
-def ping():
-    try:
-        # Minimal lightweight query (could be any trivial table)
-        response = supabase.table("paper_old_embeddings").select("id").limit(1).execute()
+@app.route("/health_backend", methods=["GET"])
+def health_backend():
+    """Lightweight endpoint specifically to prevent Render spin-down."""
+    return jsonify({
+        "status": "alive",
+        "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+        "message": "Backend is active"
+    }), 200
 
-        # Check if Supabase responded
-        if response.data is not None:
-            return jsonify({"status": "alive", "supabase": "reachable"}), 200
-        else:
-            return jsonify({"status": "alive", "supabase": "no data"}), 200
+@app.route("/health_db", methods=["GET"])
+def health_db():
+    """Heavier endpoint to prevent Supabase/Qdrant inactivity deletion."""
+    db_status = {
+        "status": "healthy",
+        "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+        "services": {"supabase": "unknown", "qdrant": {}}
+    }
+
+    # 1. Check Supabase
+    try:
+        supabase.table("user_sessions").select("id").limit(1).execute()
+        db_status["services"]["supabase"] = "reachable"
     except Exception as e:
-        return jsonify({"status": "alive", "supabase_error": str(e)}), 500
+        db_status["services"]["supabase"] = f"unreachable: {str(e)}"
+        db_status["status"] = "degraded"
+
+    # 2. Check Qdrant Shards
+    if qdrant_clients:
+        for i, client in enumerate(qdrant_clients, 1):
+            try:
+                client.get_collections()
+                db_status["services"]["qdrant"][f"shard_{i}"] = "healthy"
+            except Exception as e:
+                db_status["services"]["qdrant"][f"shard_{i}"] = f"error: {str(e)}"
+                db_status["status"] = "degraded"
+
+    return jsonify(db_status), 200 if db_status["status"] == "healthy" else 207
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    """General health check for backward compatibility."""
+    return health_db()
 
 
 if __name__ == "__main__":
