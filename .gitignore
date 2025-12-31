@@ -12,7 +12,8 @@ ENV/
 .env
 .env.local
 
-# Large data files (merged version - chunks are in data/ and tracked)
+# Large data files
+data/
 arxiv-metadata-oai-snapshot.json
 
 # Embedding data (generated locally, not in git)
