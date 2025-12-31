@@ -14,8 +14,8 @@ psycopg2-binary==2.9.10
 
 # AI & Personalization
 numpy>=1.26.4
-openai==1.61.0
-langchain-core==0.3.26
+openai==1.86.0
+langchain-core==0.3.68
 langchain-openai==0.3.27
 
 # Utilities
