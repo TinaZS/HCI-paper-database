@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { HeartIcon, HandThumbDownIcon } from "@heroicons/react/24/solid";
+import { BookmarkIcon, HandThumbDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "../AuthContext";
 
 export default function ReactionButton({
   paperId,
   qdrantId,
   onReactionChange,
+  onCite, // ✅ New prop
   session_name,
   initialReaction, // ✅ Pass this from parent
 }) {
@@ -47,6 +48,18 @@ export default function ReactionButton({
 
   return (
     <div className="flex gap-3 items-center absolute bottom-2 right-2">
+      {/* Cite Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onCite) onCite();
+        }}
+        className="focus:outline-none"
+        title="Cite this paper"
+      >
+        <DocumentDuplicateIcon className="w-6 h-6 text-[#998CC8] hover:text-[#4F106E] transition-colors" />
+      </button>
+
       {/* Like Button */}
       <div
         className="relative"
@@ -60,14 +73,14 @@ export default function ReactionButton({
           }}
           className="focus:outline-none"
         >
-          <HeartIcon
-            className={`w-6 h-6 ${reaction === "like" ? "text-red-500" : "text-gray-400"
+          <BookmarkIcon
+            className={`w-6 h-6 ${reaction === "like" ? "text-[#AB43BD]" : "text-gray-400"
               }`}
           />
         </button>
         {showTooltip === "like" && (
-          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-40 bg-black text-white text-xs text-center rounded-md px-3 py-1 shadow-lg z-50">
-            You must be logged in to like a paper
+          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-48 bg-black text-white text-xs text-center rounded-md px-3 py-1 shadow-lg z-50">
+            You must be logged in to bookmark a paper
           </div>
         )}
       </div>

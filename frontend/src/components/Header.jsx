@@ -19,9 +19,9 @@ export default function Header() {
         <a href="/" className="text-[#3E3232] hover:underline">
           Home
         </a>
-        <a href="/saved" className="text-[#3E3232] hover:underline">
-          Liked Papers
-        </a>
+        <Link to="/saved" className="text-[#3E3232] hover:underline flex items-center gap-1">
+          🔖 Bookmarks
+        </Link>
         <a href="/disliked" className="text-[#3E3232] hover:underline">
           Hidden Papers
         </a>

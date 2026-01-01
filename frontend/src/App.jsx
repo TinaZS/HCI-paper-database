@@ -161,7 +161,7 @@ export default function App() {
   const createNewSession = async () => {
     if (!newSessionName.trim()) return;
 
-    if (sessions.includes(newSessionName)) {
+    if (sessions.some(s => (s.session_name || s) === newSessionName)) {
       alert("Session name already exists. Please choose a different name.");
       return;
     }
@@ -287,7 +287,7 @@ export default function App() {
         );
       }
 
-      if (allResults.length < 6) {
+      if (allResults.length < 6 && numPapers < 200) {
         console.log("Refetching: too few visible papers...");
         return handleSearch(query, numPapers * 2, useEmbeddings, searchTopic);
       }
@@ -455,7 +455,7 @@ export default function App() {
                           onClick={() => {
                             if (sessions.length === 1) return; // Don't allow delete
                             setShowPopup(null);
-                            setConfirmDelete(session);
+                            setConfirmDelete(session.session_name);
                           }}
                           disabled={sessions.length === 1}
                         >

@@ -108,3 +108,42 @@ def generate_answer_from_papers(query, papers):
                 "However, to ensure accuracy, I recommend using the main search interface for specific paper citations.")
     
     return answer_content
+
+def generate_literature_review(papers):
+    """
+    Synthesize a collection of papers into a coherent literature review draft.
+    Analyzes themes, gaps, and methodologies.
+    """
+    if not papers:
+        return "No papers provided for literature review."
+
+    context = "\n\n".join([
+        f"Title: {p['title']}\nAbstract: {p['abstract']}\nAuthors: {', '.join(p.get('authors', []))}\nPublished: {p.get('datePublished', 'Unknown')}"
+        for p in papers if p.get("abstract")
+    ])
+
+    system_prompt = SystemMessage(content=(
+        "You are an expert academic research assistant specializing in synthesizing scientific literature. "
+        "Your task is to produce a high-quality Literature Review Draft based ONLY on the provided papers.\n\n"
+        "GOALS:\n"
+        "1. Identify common Research Themes across the collection.\n"
+        "2. Highlight Methodological Trends (how are they studying this?).\n"
+        "3. Pinpoint Research Gaps or conflicting findings.\n"
+        "4. Synthesize the findings into an educational, professional draft.\n\n"
+        "Citations: Use the EXACT paper titles in bold, e.g., **Exact Title**.\n\n"
+        "STRUCTURE:\n"
+        "## Executive Summary (1-2 sentences overview)\n"
+        "## Core Research Themes (Grouping papers by topic)\n"
+        "## Methodological Trends (Analysis of how research was conducted)\n"
+        "## Gaps & Future Directions (What is missing or inconsistent?)\n"
+        "## Synthesis & Conclusion"
+    ))
+
+    user_prompt = HumanMessage(content=(
+        f"Please synthesize the following {len(papers)} papers into a literature review:\n\n"
+        f"Papers:\n{context}"
+    ))
+
+    from llm_client import llm
+    response = llm.invoke([system_prompt, user_prompt])
+    return response.content

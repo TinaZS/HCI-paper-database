@@ -252,6 +252,36 @@ def rag_query():
 
 
 
+import zlib
+import base64
+
+def hydrate_papers(client, point_ids):
+    """Fetch full payload for specific IDs from a single shard."""
+    if not point_ids: return []
+    try:
+        results = client.retrieve(
+            collection_name=active_collection,
+            ids=point_ids,
+            with_payload=True,
+            with_vectors=True
+        )
+        # Inject the internal point ID into the payload so the frontend can track it
+        for res in results:
+            if res.payload is not None:
+                res.payload["qdrant_id"] = res.id
+                
+                # Handle decompression
+                if res.payload.get("compressed"):
+                    try:
+                        compressed_data = base64.b64decode(res.payload["abstract"])
+                        res.payload["abstract"] = zlib.decompress(compressed_data).decode('utf-8')
+                    except Exception as e:
+                        print(f"⚠️ Decompression error on point {res.id}: {e}")
+        return results
+    except Exception as e:
+        print(f"⚠️ Hydration error: {e}")
+        return []
+
 def papers_from_events(events):
     """Utility to hydrate paper details from Qdrant using a list of user_events."""
     if not events: return []
@@ -602,6 +632,53 @@ def health_db():
 def health_check():
     """General health check for backward compatibility."""
     return health_db()
+
+
+@app.route("/generate_lit_review", methods=["POST"])
+def generate_lit_review():
+    """
+    Generate an AI literature review from a user's bookmarked papers in a session.
+    """
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response
+
+        data = request.get_json()
+        session_name = data.get("session_name")
+
+        if not session_name:
+            return jsonify({"error": "session_name is required"}), 400
+
+        # 1. Fetch all 'like' (bookmarked) papers for this session
+        response = (
+            supabase
+            .table("user_events")
+            .select("qdrant_id")
+            .eq("user_id", user_id)
+            .eq("session_id", session_name)
+            .eq("event_type", "like")
+            .execute()
+        )
+
+        if not response or not response.data:
+            return jsonify({"review": "No bookmarked papers found for this session. Save some papers first!"}), 200
+
+        # 2. Hydrate metadata from Qdrant
+        papers = papers_from_events(response.data)
+
+        if not papers:
+            return jsonify({"review": "Failed to retrieve paper details. Please try again."}), 500
+
+        # 3. Import and call the synthesis script
+        from scripts.generate_answer import generate_literature_review
+        review = generate_literature_review(papers)
+
+        return jsonify({"review": review}), 200
+
+    except Exception as e:
+        print(f"❌ Lit Review Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

@@ -15,6 +15,8 @@ export default function ReactionPapers({
   const [filteredPapers, setFilteredPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [litReview, setLitReview] = useState("");
+  const [generatingReview, setGeneratingReview] = useState(false);
   const navigate = useNavigate();
 
   console.log("🔁 RENDER: ReactionPapers", {
@@ -31,8 +33,7 @@ export default function ReactionPapers({
       setLoading(true);
       try {
         const response = await fetch(
-          `${
-            import.meta.env.VITE_BACKEND_URL
+          `${import.meta.env.VITE_BACKEND_URL
           }/get_papers_by_reaction?reaction_type=${reactionType}`,
           {
             method: "GET",
@@ -82,20 +83,87 @@ export default function ReactionPapers({
     return () => clearTimeout(timeout);
   }, [searchQuery, papers]);
 
+  const handleGenerateLitReview = async () => {
+    if (!token || !session_name || generatingReview) return;
+    setGeneratingReview(true);
+    setLitReview(""); // Clear old review
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/generate_lit_review`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session_name }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLitReview(data.review);
+      } else {
+        console.error("Failed to generate literature review");
+        alert("Failed to generate review. Please try again later.");
+      }
+    } catch (error) {
+      console.error("Error generating lit review:", error);
+    } finally {
+      setGeneratingReview(false);
+    }
+  };
+
   return (
     <div className="p-6 flex flex-col items-center">
-      <h2 className="text-2xl font-semibold text-center mb-4 text-[#4F106E]">
-        {reactionType === "like" ? "Your Liked Papers" : "Your Disliked Papers"}
+      <h2 className="text-2xl font-semibold text-center mb-4 text-[#4F106E] flex items-center gap-2">
+        {reactionType === "like" ? <>🔖 Bookmarked Papers</> : "Your Disliked Papers"}
       </h2>
 
       {token && papers.length > 0 && (
-        <input
-          type="text"
-          placeholder={`Search ${reactionType} papers...`}
-          className="mb-4 p-2 border rounded-md w-full max-w-2xl"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="w-full max-w-2xl flex flex-col gap-3 mb-6">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder={`Search ${reactionType === "like" ? "bookmarked" : "disliked"} papers...`}
+              className="p-2 border rounded-md flex-grow"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {reactionType === "like" && (
+              <button
+                onClick={handleGenerateLitReview}
+                disabled={generatingReview}
+                className={`px-4 py-2 rounded-md bg-[#AB43BD] text-white font-medium shadow transition hover:bg-[#8B2F9E] ${generatingReview ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+              >
+                {generatingReview ? "Generating..." : "✨ Draft Lit Review"}
+              </button>
+            )}
+          </div>
+
+          {/* Lit Review Display Area */}
+          {litReview && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              className="bg-[#F3ECFF] border border-[#C8A2F7] rounded-xl p-6 relative"
+            >
+              <button
+                onClick={() => setLitReview("")}
+                className="absolute top-2 right-4 text-[#4F106E] hover:text-red-600 transition"
+              >
+                ✕ Close Review
+              </button>
+              <h3 className="text-xl font-bold text-[#4F106E] mb-4">AI Literature Review</h3>
+              <div className="text-[#3E3232] font-sans leading-relaxed whitespace-pre-wrap overflow-y-auto max-h-[500px] text-sm md:text-md pr-2 custom-scrollbar">
+                {/* We map the markdown-style headers to real ones or just rely on CSS */}
+                {litReview}
+              </div>
+              <p className="mt-4 text-xs italic text-[#787391]">
+                Generated based on the {papers.length} bookmarked papers in "{session_name}".
+              </p>
+            </motion.div>
+          )}
+        </div>
       )}
 
       {!token ? (
@@ -114,12 +182,12 @@ export default function ReactionPapers({
       ) : filteredPapers.length === 0 ? (
         <div className="bg-white/70 backdrop-blur-lg border border-[#E5D0FA] text-[#4F106E] px-6 py-6 rounded-2xl text-center shadow-md font-sans max-w-xl mx-auto mt-10">
           <p className="text-xl font-semibold mb-2">
-            You haven’t {reactionType}d any papers yet.
+            You haven’t {reactionType === "like" ? "bookmarked" : "disliked"} any papers yet.
           </p>
           <p className="text-sm mb-5">
             Try exploring the homepage and click the{" "}
-            <span className="text-red-500 font-bold">♥</span> or{" "}
-            <span className="text-yellow-500 font-bold">👎</span> icons to
+            <span className="text-[#AB43BD] font-bold">🔖</span> or{" "}
+            <span className="text-[#293f80] font-bold">👎</span> icons to
             curate your research!
           </p>
           <a

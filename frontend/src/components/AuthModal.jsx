@@ -22,7 +22,9 @@ export default function AuthModal({ onClose }) {
     }
 
     if (isResettingPassword) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://hci-paper-database-ug36.vercel.app/",
+      });
       if (error) {
         setMessage(error.message);
         return;
@@ -77,8 +79,8 @@ export default function AuthModal({ onClose }) {
           {isResettingPassword
             ? "Forgot Password?"
             : isSigningUp
-            ? "Sign Up"
-            : "Sign In"}
+              ? "Sign Up"
+              : "Sign In"}
         </h2>
 
         <input
@@ -120,8 +122,8 @@ export default function AuthModal({ onClose }) {
           {isResettingPassword
             ? "Send Magic Login Link"
             : isSigningUp
-            ? "Sign Up"
-            : "Sign In"}
+              ? "Sign Up"
+              : "Sign In"}
         </button>
 
         {!isResettingPassword && (

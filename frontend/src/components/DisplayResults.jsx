@@ -4,6 +4,7 @@ import ReactionButton from "./ReactionButton";
 import { useAuth } from "../AuthContext";
 import { supabase } from "../supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
+import CitationModal from "./CitationModal";
 
 export default function DisplayResults({
   results,
@@ -20,6 +21,7 @@ export default function DisplayResults({
   const { user, token } = useAuth();
   const [visibleResults, setVisibleResults] = useState([]);
   const [reactions, setReactions] = useState({});
+  const [citingPaper, setCitingPaper] = useState(null);
 
   useEffect(() => {
     let filtered = [...results];
@@ -207,6 +209,10 @@ export default function DisplayResults({
                   onReactionChange={(newReaction) =>
                     handleReactionChange(paper.paper_id, newReaction)
                   }
+                  onCite={() => {
+                    setCitingPaper(paper);
+                    trackSignal(paper.paper_id, "cite_click", 0, paper.qdrant_id);
+                  }}
                   session_name={session_name}
                   initialReaction={reactionType || reactions[paper.paper_id]}
                 />
@@ -221,6 +227,13 @@ export default function DisplayResults({
           paper={selectedPaper}
           onClose={() => setSelectedPaper(null)}
           trackSignal={trackSignal}
+        />
+      )}
+
+      {citingPaper && (
+        <CitationModal
+          paper={citingPaper}
+          onClose={() => setCitingPaper(null)}
         />
       )}
     </div>
