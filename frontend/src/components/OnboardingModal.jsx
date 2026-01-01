@@ -63,34 +63,34 @@ export default function OnboardingModal() {
   const { title, description, animation, image } = slides[currentSlide];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#F5EDE3] text-[#3E3232] font-serif w-full max-w-md rounded-xl p-6 shadow-xl space-y-4 text-center">
-        <h2 className="text-2xl font-bold">{title}</h2>
-        <p className="text-base sm:text-lg font-normal leading-relaxed text-[#3E3232]">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-6">
+      <div className="bg-white w-full max-w-lg rounded-3xl p-10 shadow-2xl space-y-6 text-center border border-slate-100 animate-in fade-in zoom-in duration-300">
+        <h2 className="text-3xl font-black text-slate-900 tracking-tight">{title}</h2>
+        <p className="text-base sm:text-lg font-medium leading-relaxed text-slate-600">
           {description}
         </p>
 
         {animation && (
-          <div className="w-40 h-40 mx-auto">
+          <div className="w-48 h-48 mx-auto py-2">
             <Lottie animationData={animation} loop={true} />
           </div>
         )}
 
         {image && (
-          <div className="w-full flex justify-center">
+          <div className="w-full flex justify-center py-4">
             <img
               src={image}
               alt="Onboarding visual"
-              className="max-w-[180px] max-h-[180px] rounded-lg object-contain"
+              className="max-w-[220px] max-h-[220px] rounded-xl object-contain shadow-lg border border-slate-100"
             />
           </div>
         )}
 
         <button
           onClick={next}
-          className="bg-[#B8A290] hover:bg-[#A68C7C] text-white px-5 py-2 rounded-md transition"
+          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
         >
-          {currentSlide === slides.length - 1 ? "Get Started" : "Next"}
+          {currentSlide === slides.length - 1 ? "Start Researching" : "Continue"}
         </button>
       </div>
     </div>

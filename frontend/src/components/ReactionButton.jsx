@@ -47,7 +47,7 @@ export default function ReactionButton({
   };
 
   return (
-    <div className="flex gap-3 items-center absolute bottom-2 right-2">
+    <div className="flex gap-4 items-center">
       {/* Cite Button */}
       <button
         onClick={(e) => {

@@ -32,6 +32,7 @@ export default function App() {
   const [dislikedPaperIds, setDislikedPaperIds] = useState([]);
   const [filteredResults, setFilteredResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
 
   const [sidebarVisible, setSidebarVisible] = useState(() => {
     const savedState = localStorage.getItem("sidebarVisible");
@@ -294,6 +295,9 @@ export default function App() {
 
       setResults(allResults);
       setFilteredResults(allResults.slice(0, 6));
+      if (!useEmbeddings) {
+        setSearchText(trimmedQuery);
+      }
     } catch (error) {
       console.error("Error fetching results:", error);
     } finally {
@@ -356,7 +360,7 @@ export default function App() {
       {!sidebarVisible && (
         <button
           onClick={() => setSidebarVisible(true)}
-          className="fixed top-4 left-4 z-20 p-2 rounded-md bg-white shadow-md hover:bg-gray-100"
+          className="fixed top-4 left-4 z-30 p-2.5 rounded-xl bg-white shadow-xl hover:bg-slate-50 transition-all border border-slate-200 text-slate-600 hover:text-indigo-600 active:scale-95"
           aria-label="Open sidebar"
         >
           <svg
@@ -380,12 +384,12 @@ export default function App() {
       {/* Sidebar Container - Fixed width that doesn't expand onto the page */}
       <div
         className={`w-64 h-full transition-transform duration-300 ease-in-out ${sidebarVisible ? "translate-x-0" : "-translate-x-full"
-          } fixed top-0 left-0 z-10`}
+          } fixed top-0 left-0 z-40`}
       >
-        <div className="bg-[#F3ECFF] text-[#4F106E] font-sans h-full flex flex-col w-full border-r border-[#C8A2F7] shadow-md">
-          <div className="p-4 flex justify-between items-center border-b">
-            <h2 className="text-lg font-semibold text-[#4F106E]">
-              User Sessions
+        <div className="bg-[#0f172a] text-white h-full flex flex-col w-full border-r border-slate-800 shadow-xl">
+          <div className="p-5 flex justify-between items-center border-b border-slate-800">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+              Research Sessions
             </h2>
             <button
               onClick={() => setSidebarVisible(false)}
@@ -416,22 +420,24 @@ export default function App() {
                 {sessions.map((session) => (
                   <li
                     key={session.id}
-                    className={`cursor-pointer px-3 py-2 rounded-md flex justify-between items-center transition-colors ${activeSession === session.session_name
-                      ? "bg-[#C8A2F7] text-white font-semibold"
-                      : "hover:bg-[#E0C8FA]"
+                    className={`cursor-pointer px-4 py-2.5 rounded-lg flex justify-between items-center transition-all duration-200 ${activeSession === session.session_name
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
                       }`}
                     onClick={() => handleSessionChange(session.session_name)}
                     style={{ position: "relative" }}
                   >
-                    <span>{session.session_name}</span>
+                    <span className="text-sm font-medium">{session.session_name}</span>
                     <button
-                      className="cursor-pointer px-2 text-gray-500 hover:text-black"
+                      className="cursor-pointer px-1 opacity-60 hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowPopup(showPopup === session.id ? null : session.id);
                       }}
                     >
-                      ⋮
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
+                      </svg>
                     </button>
 
                     {/* Popup Menu */}
@@ -473,21 +479,21 @@ export default function App() {
 
           {/* New Session Input - Fixed at bottom */}
           {token && (
-            <div className="p-4 border-t">
+            <div className="p-5 border-t border-slate-800 bg-slate-900/50">
               <div className="flex flex-col gap-2">
                 <input
                   type="text"
-                  className="border px-3 py-2 rounded-md w-full"
-                  placeholder="Session name"
+                  className="bg-slate-800 border-none text-white text-sm px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-500"
+                  placeholder="New project name"
                   value={newSessionName}
                   onChange={(e) => setNewSessionName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && createNewSession()}
                 />
                 <button
-                  className="w-full px-3 py-2 bg-[#b095cf] text-white rounded-md hover:bg-[#7e6996]"
+                  className="w-full px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-500/20"
                   onClick={createNewSession}
                 >
-                  + Add
+                  Create Project
                 </button>
               </div>
             </div>
@@ -496,24 +502,23 @@ export default function App() {
       </div>
 
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-[#F3ECFF] p-6 rounded-xl shadow-xl w-96 text-center transform transition-all scale-95 hover:scale-100 border border-[#C8A2F7]">
-            <h3 className="text-lg font-semibold text-[#4F106E] mb-3 font-sans">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border border-slate-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
               Confirm Deletion
             </h3>
-            <p className="text-sm text-[#6B368D] mb-6 font-sans">
-              Are you sure you want to delete{" "}
-              <span className="font-bold">{confirmDelete}</span>?
+            <p className="text-sm text-slate-500 mb-8">
+              Are you sure you want to delete <span className="text-slate-900 font-semibold">{confirmDelete}</span>? This action cannot be undone.
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-col gap-3">
               <button
-                className="bg-[#C8A2F7] text-white px-5 py-2 rounded-md font-medium font-sans hover:bg-[#B083D6] transition"
+                className="w-full bg-red-600 text-white py-2.5 rounded-lg font-semibold hover:bg-red-500 transition-colors shadow-lg shadow-red-500/10"
                 onClick={confirmDeletion}
               >
-                Delete
+                Delete Session
               </button>
               <button
-                className="bg-white text-[#4F106E] border border-[#C8A2F7] px-5 py-2 rounded-md font-medium font-sans hover:bg-[#EFE1FF] transition"
+                className="w-full bg-slate-100 text-slate-700 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition-colors"
                 onClick={() => setConfirmDelete(null)}
               >
                 Cancel
@@ -528,12 +533,20 @@ export default function App() {
         className={`transition-all duration-300 ease-in-out flex-grow ${sidebarVisible ? "ml-64" : "ml-0"
           }`}
       >
-        <div
-          className="min-h-screen w-full bg-cover bg-center bg-no-repeat flex flex-col items-center px-4"
-          style={{ backgroundImage: `url(${backgroundSvg})` }}
-        >
+        <div className="min-h-screen w-full flex flex-col items-center px-4 bg-slate-50 relative overflow-hidden">
+          {/* subtle background pattern */}
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
+          </div>
           <LoadingBar ref={loadingBarRef} color="#60A5FA" height={10} />
-          <Header />
+          <Header sidebarVisible={sidebarVisible} />
 
           <div className="w-full max-w-4xl">
             <Routes>
@@ -542,12 +555,12 @@ export default function App() {
                 path="/"
                 element={
                   <>
-                    <h1
-                      className="text-6xl text-center mt-16 mb-12 tracking-wide text-[#4F106E]"
-                      style={{ fontFamily: "Gugi, sans-serif" }}
-                    >
-                      PaperMatch
-                    </h1>
+                    <div className="text-center mt-20 mb-16 z-10">
+                      <h1 className="text-6xl font-black tracking-tight text-slate-900 mb-2">
+                        PaperMatch
+                      </h1>
+                      <p className="text-lg text-slate-500 font-medium">Research at the speed of thought.</p>
+                    </div>
 
                     <QueryInput
                       onSearch={handleSearch}
@@ -556,21 +569,21 @@ export default function App() {
                       selectedQuery={selectedQuery}
                       onCategoryChange={setSelectedCategory}
                       onQueryChange={setSelectedQuery}
+                      searchText={searchText}
+                      onSearchTextChange={setSearchText}
                       sortBy={sortBy}
                       setSortBy={setSortBy}
                     />
 
                     {/* Suggested Queries */}
-                    <div className="mt-6">
-                      <h2 className="text-lg font-semibold text-[#AB43BD] mb-3">
-                        Suggested Searches: {selectedQuery}
-                      </h2>
-                      <div className="flex gap-2 flex-wrap">
+                    <div className="mt-8 z-10 w-full max-w-4xl">
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <span className="text-sm font-bold text-slate-400 uppercase tracking-wider mr-2">Discover:</span>
                         {suggestedQueries.map((query, index) => (
                           <button
                             key={index}
                             onClick={() => handleSearch(query)}
-                            className="px-4 py-2 rounded-full bg-[#D9BAF7] text-[#4F106E] font-medium hover:bg-[#CFA2F4] transition shadow-sm hover:shadow-md"
+                            className="px-4 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 text-sm font-medium hover:border-indigo-400 hover:text-indigo-600 transition-all hover:shadow-sm"
                           >
                             {query}
                           </button>

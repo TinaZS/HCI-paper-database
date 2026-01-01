@@ -4,7 +4,7 @@ import AuthModal from "./AuthModal"; // ✅ Import modal
 import { useState } from "react"; // ✅ Import useState
 import { Link } from "react-router-dom"; // ✅ Import Link for navigation
 
-export default function Header() {
+export default function Header({ sidebarVisible }) {
   const { user, setUser } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -14,35 +14,38 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full py-4 px-6 flex justify-between items-center">
-      <nav className="ml-12 flex space-x-6 text-lg font-serif">
-        <a href="/" className="text-[#3E3232] hover:underline">
-          Home
-        </a>
-        <Link to="/saved" className="text-[#3E3232] hover:underline flex items-center gap-1">
-          🔖 Bookmarks
+    <header className={`w-full py-6 flex justify-between items-center z-20 transition-all duration-300 ${sidebarVisible ? "px-10" : "pl-20 pr-10"
+      }`}>
+      <nav className="flex space-x-8 text-sm font-semibold tracking-wide uppercase text-slate-400">
+        <Link to="/" className="hover:text-indigo-600 transition-colors">
+          Discovery
         </Link>
-        <a href="/disliked" className="text-[#3E3232] hover:underline">
-          Hidden Papers
-        </a>
+        <Link to="/saved" className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+          Bookmarks
+        </Link>
+        <Link to="/disliked" className="hover:text-indigo-600 transition-colors">
+          Archive
+        </Link>
       </nav>
 
       {/* ✅ Right-side user authentication */}
       <div>
         {user ? (
-          <div className="flex items-center gap-4">
-            <span className="text-[#4F106E]">Signed in as {user.email}</span>
+          <div className="flex items-center gap-6">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {user.email}
+            </span>
             <button
               onClick={handleLogout}
-              className="bg-[#C8A2F7] text-white font-sans px-5 py-2 rounded-full shadow-md hover:bg-[#AB43BD] transition"
+              className="bg-slate-100 text-slate-600 px-5 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition-all border border-slate-200"
             >
-              Logout
+              Sign Out
             </button>
           </div>
         ) : (
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="bg-[#C8A2F7] text-white font-sans px-5 py-2 rounded-full shadow-md hover:bg-[#AB43BD] transition"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20"
           >
             Sign In
           </button>

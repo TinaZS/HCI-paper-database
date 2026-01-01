@@ -1,15 +1,60 @@
-/* === Google Fonts === */
-@import url("https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Gloock&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@600&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Gugi&display=swap");
+/* === Professional Modern Typography (YC Standards) === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* === Tailwind Base === */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* === For Truncated Text === */
+:root {
+  --primary: #0f172a; /* Slate 900 */
+  --accent: #6366f1;  /* Indigo 500 */
+  --bg-main: #f8fafc; /* Slate 50 */
+  --border: #e2e8f0;  /* Slate 200 */
+  --text-muted: #64748b; /* Slate 500 */
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* === Custom Layout Components === */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+}
+
+.card-premium {
+  background: white;
+  border: 1px solid var(--border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-premium:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+/* === Refined Scrollbar === */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* === Truncated Text === */
 .line-clamp-4 {
   display: -webkit-box;
   -webkit-line-clamp: 4;
@@ -18,17 +63,15 @@
 }
 
 /* === Chatbot-specific refinements === */
-/* === React Chatbot Kit: make inner container & message area full width/height === */
 .chatbot-root .react-chatbot-kit-chat-container,
 .chatbot-root .react-chatbot-kit-chat-inner-container,
 .chatbot-root .react-chatbot-kit-chat-message-container,
 .chatbot-root .react-chatbot-kit-chat-input-container {
   width: 100% !important;
-  max-width: none !important; /* <-- removes the kit's internal cap */
-  align-self: stretch !important; /* <-- stop centering/narrowing */
+  max-width: none !important;
+  align-self: stretch !important;
 }
 
-/* Fill height & allow shrinking in flex parents (Safari/Chrome quirk) */
 .chatbot-root,
 .chatbot-root .react-chatbot-kit-chat-container,
 .chatbot-root .react-chatbot-kit-chat-inner-container,
@@ -37,78 +80,61 @@
   min-height: 0 !important;
 }
 
-/* Column layout & message area expansion */
 .chatbot-root .react-chatbot-kit-chat-container {
   display: flex !important;
   flex-direction: column !important;
   box-shadow: none !important;
+  background: white !important;
+  border-left: 1px solid var(--border) !important;
 }
+
 .chatbot-root .react-chatbot-kit-chat-inner-container {
   display: flex !important;
   flex-direction: column !important;
 }
+
 .chatbot-root .react-chatbot-kit-chat-message-container {
   flex: 1 1 auto !important;
   display: flex !important;
   flex-direction: column !important;
   overflow-y: auto !important;
-  padding: 12px 14px !important; /* small side padding */
+  padding: 16px !important;
 }
 
-/* Optional: hide built-in gray header strip */
 .chatbot-root .react-chatbot-kit-chat-header {
   display: none !important;
 }
 
-/* Make bubbles use the entire row (minus avatar + gap) */
-.chatbot-root .react-chatbot-kit-chat-bot-message,
-.chatbot-root .react-chatbot-kit-user-chat-message {
-  /* Avatar ~40px + 16px gap -> subtract ~56px to avoid overflow */
-  max-width: calc(100% - 56px) !important;
-  margin-bottom: 10px !important;
-}
 .chatbot-root .react-chatbot-kit-chat-bot-message {
-  margin-right: 8px !important;
-}
-.chatbot-root .react-chatbot-kit-user-chat-message {
-  margin-left: 8px !important;
+  background-color: #f1f5f9 !important;
+  color: var(--primary) !important;
+  border-radius: 12px 12px 12px 0px !important;
+  font-size: 0.925rem !important;
+  line-height: 1.5 !important;
 }
 
-/* Input row polish */
-.chatbot-root .react-chatbot-kit-chat-input-container {
-  border-top: 1px solid #e5e7eb !important;
-  padding: 8px 10px !important;
+.chatbot-root .react-chatbot-kit-user-chat-message {
+  background-color: var(--accent) !important;
+  color: white !important;
+  border-radius: 12px 12px 0px 12px !important;
+  font-size: 0.925rem !important;
+  line-height: 1.5 !important;
 }
+
+.chatbot-root .react-chatbot-kit-chat-input-container {
+  border-top: 1px solid var(--border) !important;
+  background: white !important;
+  padding: 12px !important;
+}
+
 .chatbot-root .react-chatbot-kit-chat-input {
-  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
 }
+
 .chatbot-root .react-chatbot-kit-chat-btn-send {
-  border-radius: 12px !important;
-}
-/* === Make message bubbles span full chat width === */
-
-/* Remove any max-width constraint */
-.chatbot-root .react-chatbot-kit-chat-bot-message,
-.chatbot-root .react-chatbot-kit-user-chat-message {
-  max-width: 100% !important;
-  width: auto !important;
-  flex: 1 1 auto !important;
-}
-
-/* Optional: add some horizontal breathing room */
-.chatbot-root .react-chatbot-kit-chat-bot-message {
-  margin-right: 8px !important; /* space from right edge */
-}
-.chatbot-root .react-chatbot-kit-user-chat-message {
-  margin-left: 8px !important; /* space from left edge */
-}
-/* === Add spacing below the last message bubble === */
-.chatbot-root .react-chatbot-kit-chat-message-container {
-  padding-bottom: 70px !important; /* adjust as needed */
-  scroll-padding-bottom: 70px !important; /* ensures auto-scroll isn't cut off */
-}
-
-/* Optional: make it slightly dynamic based on your input bar height */
-.chatbot-root .react-chatbot-kit-chat-input-container {
-  min-height: 60px !important; /* keep consistent space */
+  background-color: var(--accent) !important;
+  border-radius: 8px !important;
+  margin-left: 8px !important;
 }

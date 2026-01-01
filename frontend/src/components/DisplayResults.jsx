@@ -146,46 +146,40 @@ export default function DisplayResults({
                 trackSignal(paper.paper_id, "expand", 0, paper.qdrant_id, { type: "modal_open" });
               }}
             >
-              <div className="p-6 border border-[#E5D0FA] bg-white/70 rounded-xl shadow-lg relative transition-all duration-300 hover:shadow-xl w-full pb-12 space-y-3 cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-sans text-lg font-semibold text-[#4F106E] leading-tight flex-1 pr-2">
+              <div className="card-premium p-8 rounded-2xl relative w-full flex flex-col space-y-4 cursor-pointer">
+                <div className="flex justify-between items-start gap-4">
+                  <h3 className="text-xl font-bold text-slate-900 leading-snug flex-1">
                     {paper.title}
                   </h3>
                   {paper.similarity_score !== undefined && (
-                    <span className="text-sm italic text-[#AB43BD] whitespace-nowrap">
-                      Score: {paper.similarity_score.toFixed(2)}
-                    </span>
+                    <div className="bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+                      <span className="text-xs font-bold text-indigo-600 uppercase tracking-tighter">
+                        Match: {Math.round(paper.similarity_score * 100)}%
+                      </span>
+                    </div>
                   )}
                 </div>
 
                 {paper.authors && paper.authors.length > 0 && (
-                  <div className="flex justify-between text-sm italic text-[#998CC8]">
-                    <span>{paper.authors[0]}, et al.</span>
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    <span>{paper.authors[0]}</span>
+                    <span className="text-slate-300">•</span>
                     <span>{formattedDate}</span>
                   </div>
                 )}
 
-                <p className="text-[#787391] text-sm leading-relaxed mt-2">
-                  {paper.abstract.length > 200
-                    ? `${paper.abstract.substring(0, 200)}...`
-                    : paper.abstract}
+                <p className="text-slate-600 text-sm leading-relaxed line-clamp-4">
+                  {paper.abstract}
                 </p>
 
-                <a
-                  href={paper.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#AB43BD] underline inline-block text-sm font-medium mt-2"
-                >
-                  Read More →
-                </a>
+                <div className="flex-grow"></div>
 
                 {paper.categories && paper.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {paper.categories.map((category, index) => (
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-50">
+                    {paper.categories.slice(0, 3).map((category, index) => (
                       <span
                         key={index}
-                        className="bg-[#787391] text-white text-sm px-3 py-1 rounded-full"
+                        className="bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded"
                       >
                         {category}
                       </span>
@@ -193,29 +187,33 @@ export default function DisplayResults({
                   </div>
                 )}
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSearch(paper.embedding, 6, true);
-                    trackSignal(paper.paper_id, "find_similar", 0, paper.qdrant_id);
-                  }}
-                  className="mt-3 py-1.5 px-3 text-sm bg-[#998CC8] text-white hover:bg-[#714ea6] font-medium rounded-md shadow hover:bg-[#A27D5C] transition duration-150"
-                >
-                  Find Similar Papers
-                </button>
-                <ReactionButton
-                  paperId={paper.paper_id}
-                  qdrantId={paper.qdrant_id}
-                  onReactionChange={(newReaction) =>
-                    handleReactionChange(paper.paper_id, newReaction)
-                  }
-                  onCite={() => {
-                    setCitingPaper(paper);
-                    trackSignal(paper.paper_id, "cite_click", 0, paper.qdrant_id);
-                  }}
-                  session_name={session_name}
-                  initialReaction={reactionType || reactions[paper.paper_id]}
-                />
+                <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-50 mt-auto">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSearch(paper.embedding, 6, true);
+                      trackSignal(paper.paper_id, "find_similar", 0, paper.qdrant_id);
+                    }}
+                    className="flex-grow py-2.5 px-4 text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/10 active:scale-95"
+                  >
+                    Similar Papers
+                  </button>
+                  <div className="flex-shrink-0">
+                    <ReactionButton
+                      paperId={paper.paper_id}
+                      qdrantId={paper.qdrant_id}
+                      onReactionChange={(newReaction) =>
+                        handleReactionChange(paper.paper_id, newReaction)
+                      }
+                      onCite={() => {
+                        setCitingPaper(paper);
+                        trackSignal(paper.paper_id, "cite_click", 0, paper.qdrant_id);
+                      }}
+                      session_name={session_name}
+                      initialReaction={reactionType || reactions[paper.paper_id]}
+                    />
+                  </div>
+                </div>
               </div>
             </motion.div>
           );
@@ -227,6 +225,11 @@ export default function DisplayResults({
           paper={selectedPaper}
           onClose={() => setSelectedPaper(null)}
           trackSignal={trackSignal}
+          onSearch={onSearch} // Pass onSearch
+          session_name={session_name} // Pass session_name
+          reactionType={reactionType} // Pass reactionType
+          reactions={reactions} // Pass reactions
+          setCitingPaper={setCitingPaper} // Pass setCitingPaper
         />
       )}
 
@@ -240,7 +243,16 @@ export default function DisplayResults({
   );
 }
 
-function Modal({ paper, onClose, trackSignal }) {
+function Modal({
+  paper,
+  onClose,
+  trackSignal,
+  onSearch,
+  session_name,
+  reactionType,
+  reactions,
+  setCitingPaper,
+}) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const startTimeRef = useRef(Date.now());
 
@@ -261,71 +273,118 @@ function Modal({ paper, onClose, trackSignal }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50"
+      className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex justify-center items-start p-6 z-50 overflow-y-auto py-12 md:py-20"
       onClick={onClose}
     >
       <div
-        className="bg-[#F3ECFF] text-[#4F106E] font-sans rounded-2xl shadow-xl border border-[#E5D0FA] max-w-2xl w-full p-8 relative max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-8 md:p-12 relative animate-in fade-in zoom-in duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#3E3232] text-xl hover:text-red-600"
+          className="absolute top-6 right-8 text-slate-400 hover:text-slate-900 transition-colors"
         >
-          ✖
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
         </button>
 
-        <h2 className="text-2xl font-bold mb-2">{paper.title}</h2>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              {paper.categories && paper.categories.length > 0 && (
+                <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border border-indigo-100">
+                  {paper.categories[0]}
+                </span>
+              )}
+              {paper.similarity_score !== undefined && (
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  Match Stability: {Math.round(paper.similarity_score * 100)}%
+                </span>
+              )}
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 leading-tight">
+              {paper.title}
+            </h2>
+            {paper.authors && (
+              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                By {paper.authors.join(", ")}
+              </p>
+            )}
+          </div>
 
-        {paper.similarity_score !== undefined && (
-          <p className="text-sm italic mb-1">
-            <strong>Score:</strong> {paper.similarity_score}
-          </p>
-        )}
+          <div className="flex items-center gap-4 py-4 border-y border-slate-100">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Publication Date</span>
+              <span className="text-sm font-bold text-slate-900">{new Date(paper.datePublished).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            </div>
+          </div>
 
-        {paper.authors && (
-          <p className="text-sm italic mb-1">{paper.authors.join(", ")}</p>
-        )}
+          <div className="prose prose-slate max-w-none">
+            <p className="text-slate-600 text-base leading-relaxed font-medium opacity-90">
+              {paper.abstract}
+            </p>
+          </div>
 
-        <p className="text-sm italic mb-4">
-          Published: {new Date(paper.datePublished).toLocaleDateString("en-US")}
-        </p>
+          <div className="pt-8 flex flex-col sm:flex-row gap-6 items-center justify-between border-t border-slate-100">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <a
+                href={paper.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
+                onClick={() => trackSignal(paper.paper_id, "click", 0, paper.qdrant_id, { type: "link_out" })}
+              >
+                Access Publication
+              </a>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSearch(paper.embedding, 6, true);
+                  trackSignal(paper.paper_id, "find_similar", 0, paper.qdrant_id);
+                  onClose();
+                }}
+                className="px-6 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-indigo-600 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+              >
+                Find Similar
+              </button>
+            </div>
 
-        <p className="text-md leading-relaxed mb-4 whitespace-pre-wrap">
-          {paper.abstract}
-        </p>
+            <div className="flex items-center gap-6">
+              <ReactionButton
+                paperId={paper.paper_id}
+                qdrantId={paper.qdrant_id}
+                onReactionChange={() => { }} // No need to filter results in modal
+                onCite={() => {
+                  setCitingPaper(paper);
+                  trackSignal(paper.paper_id, "cite_click", 0, paper.qdrant_id);
+                }}
+                session_name={session_name}
+                initialReaction={reactionType || reactions[paper.paper_id]}
+              />
+            </div>
+          </div>
 
-        {paper.categories && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {paper.categories.map((category, index) => (
+          <div className="pt-4 flex flex-wrap gap-2">
+            {paper.categories?.map((category, index) => (
               <div
                 key={index}
                 className="relative group"
                 onMouseEnter={() => setHoveredCategory(category)}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
-                <span className="bg-[#787391] text-white text-sm px-3 py-1 rounded-full">
+                <span className="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-md border border-slate-100">
                   {category}
                 </span>
                 {hoveredCategory === category && (
-                  <div className="absolute left-1/2 transform -translate-x-1/2 -top-8 bg-[#3E3232] text-[#F5EDE3] text-xs px-2 py-1 rounded shadow-lg opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {categoryMap[category] || "Unknown Category"}
+                  <div className="absolute left-1/2 transform -translate-x-1/2 -top-10 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg shadow-2xl z-[60] whitespace-nowrap">
+                    {categoryMap[category] || "Unknown Field"}
                   </div>
                 )}
               </div>
             ))}
           </div>
-        )}
-
-        <a
-          href={paper.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#AB43BD] hover:underline text-sm font-medium"
-          onClick={() => trackSignal(paper.paper_id, "click", 0, paper.qdrant_id, { type: "link_out" })}
-        >
-          Read More →
-        </a>
+        </div>
       </div>
     </div>
   );
