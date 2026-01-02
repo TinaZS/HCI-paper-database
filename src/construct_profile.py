@@ -21,6 +21,9 @@ def construct_user_profile(papers, current_session_id=None, distinct_personas=Fa
     if not papers:
         return np.zeros(1536)
 
+    # Initialize a fallback embedding dimension if possible
+    fallback_dim = 1536 
+    
     current_time = datetime.utcnow()
     weighted_embeddings = []
     total_weight = 0
@@ -73,7 +76,7 @@ def construct_user_profile(papers, current_session_id=None, distinct_personas=Fa
         total_weight += abs(effective_weight) # Use abs for normalization denominator
 
     if not weighted_embeddings or total_weight == 0:
-        return np.zeros_like(embedding)
+        return np.zeros(fallback_dim)
 
     # Compute Weighted Average
     user_profile_vector = np.sum(weighted_embeddings, axis=0) / total_weight

@@ -1,12 +1,19 @@
 import { supabase } from "../supabaseClient"; // ✅ Import supabase client
 import { useAuth } from "../AuthContext"; // ✅ Use Auth Context
 import AuthModal from "./AuthModal"; // ✅ Import modal
-import { useState } from "react"; // ✅ Import useState
+import { useState, useEffect } from "react"; // ✅ Import useState and useEffect
 import { Link } from "react-router-dom"; // ✅ Import Link for navigation
+import { AnimatePresence } from "framer-motion";
 
 export default function Header({ sidebarVisible }) {
   const { user, setUser } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    window.addEventListener('open-auth-modal', handleOpenAuth);
+    return () => window.removeEventListener('open-auth-modal', handleOpenAuth);
+  }, []);
 
   async function handleLogout() {
     await supabase.auth.signOut(); // ✅ Logout from Supabase
@@ -23,8 +30,11 @@ export default function Header({ sidebarVisible }) {
         <Link to="/saved" className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
           Bookmarks
         </Link>
+        <Link to="/for-you" className="hover:text-indigo-600 transition-colors">
+          For You
+        </Link>
         <Link to="/disliked" className="hover:text-indigo-600 transition-colors">
-          Archive
+          Disliked
         </Link>
       </nav>
 
@@ -52,12 +62,12 @@ export default function Header({ sidebarVisible }) {
         )}
       </div>
 
-      {/* ✅ Wrap modal in an overlay */}
-      {isAuthModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      {/* ✅ Auth Modal */}
+      <AnimatePresence>
+        {isAuthModalOpen && (
           <AuthModal onClose={() => setIsAuthModalOpen(false)} />
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </header>
   );
 }

@@ -7,6 +7,7 @@ import { defaultArticles, suggestedQueries } from "./constants";
 import Header from "./components/Header";
 import categoriesData from "./components/categories.json";
 import ReactionPapers from "./components/ReactionPapers";
+import ForYouPage from "./components/ForYouPage";
 import { useAuth } from "./AuthContext";
 import { supabase } from "./supabaseClient";
 import OnboardingModal from "./components/OnboardingModal";
@@ -417,9 +418,9 @@ export default function App() {
             {/* Check if the user is logged in */}
             {token ? (
               <ul className="space-y-1">
-                {sessions.map((session) => (
+                {sessions.map((session, index) => (
                   <li
-                    key={session.id}
+                    key={session.id || (typeof session === 'string' ? session : index)}
                     className={`cursor-pointer px-4 py-2.5 rounded-lg flex justify-between items-center transition-all duration-200 ${activeSession === session.session_name
                       ? "bg-indigo-600 text-white shadow-md"
                       : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -629,6 +630,17 @@ export default function App() {
                       </div>
                     </div>
                   )
+                }
+              />
+
+              <Route
+                path="/for-you"
+                element={
+                  <ForYouPage
+                    onSearch={handleSearch}
+                    session_name={activeSession}
+                    showAll={true}
+                  />
                 }
               />
 

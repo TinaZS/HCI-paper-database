@@ -160,9 +160,9 @@ export default function DisplayResults({
                   )}
                 </div>
 
-                {paper.authors && paper.authors.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                    <span>{paper.authors[0]}</span>
+                {paper.authors && (Array.isArray(paper.authors) ? paper.authors.length > 0 : typeof paper.authors === "string") && (
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest text-left">
+                    <span>{Array.isArray(paper.authors) ? paper.authors[0] : paper.authors.split(',')[0]}</span>
                     <span className="text-slate-300">•</span>
                     <span>{formattedDate}</span>
                   </div>
@@ -308,7 +308,7 @@ function Modal({
             </h2>
             {paper.authors && (
               <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
-                By {paper.authors.join(", ")}
+                By {Array.isArray(paper.authors) ? paper.authors.join(", ") : paper.authors}
               </p>
             )}
           </div>

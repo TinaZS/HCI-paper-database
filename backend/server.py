@@ -16,8 +16,16 @@ from scripts.generate_answer import generate_answer_from_papers
 from supabase_client import supabase 
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
+from src.construct_profile import construct_user_profile
+from src.search import qdrant_search_parallel
 
-load_dotenv()
+# --- Environment Configuration ---
+load_dotenv() 
+# Also look in root directory if backend/.env is missing
+root_env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+if os.path.exists(root_env_path):
+    load_dotenv(root_env_path)
+
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 FAISS_INDEX_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "faiss_index.index"))
@@ -92,8 +100,111 @@ if not index and not qdrant_clients:
 
 
 
+@app.route("/for-you", methods=["GET"])
+def handle_for_you_recommendations():
+    """Session-scoped recommendation endpoint: Returns papers similar to current session interactions."""
+    try:
+        user_id, error_response = extract_user_id_from_token()
+        if error_response:
+            return error_response
+
+        session_name = request.headers.get('XSessionName')
+        if not session_name:
+            return jsonify({"error": "Missing session name"}), 400
+
+        k = int(request.args.get("k", 12))  # Number of recommendations
+        
+        print(f"🎯 For You request: user={user_id}, session={session_name}, k={k}")
+
+        # 1. Fetch session-scoped events (positive interactions only)
+        # We look for 'save', 'like', 'cite', or any positive weight events
+        events_response = supabase.table("user_events")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .eq("session_id", session_name)\
+            .gt("weight", 0)\
+            .execute()
+
+        if not events_response.data:
+            return jsonify({
+                "papers": [], 
+                "session_interaction_count": 0,
+                "message": "No interactions in this session yet. Start exploring to see recommendations!"
+            })
+
+        events = events_response.data
+        print(f"   Found {len(events)} positive interactions in session")
+
+        # 2. Get IDs of papers already seen (to exclude from results)
+        seen_qdrant_ids = set(e["qdrant_id"] for e in events if e.get("qdrant_id"))
+
+        # 3. Fetch embeddings for session papers
+        qdrant_history_ids = list(seen_qdrant_ids)
+        embedding_map = {}
+        
+        for q_client in qdrant_clients:
+            shard_res = hydrate_papers(q_client, qdrant_history_ids)
+            for res in shard_res:
+                if res.vector is not None:
+                    embedding_map[res.id] = res.vector
+
+        # 4. Build profile inputs
+        profile_inputs = []
+        for event in events:
+            qid = event.get("qdrant_id")
+            if qid in embedding_map:
+                profile_inputs.append({
+                    "embedding": embedding_map[qid],
+                    "created_at": event["created_at"],
+                    "weight": event["weight"],
+                    "session_id": event.get("session_id")
+                })
+
+        if not profile_inputs:
+            return jsonify({
+                "papers": [], 
+                "session_interaction_count": len(events),
+                "message": "Could not build profile from session interactions"
+            })
+
+        # 5. Build session profile vector (session-only boost handled in construct_user_profile)
+        import numpy as np
+        session_profile = construct_user_profile(profile_inputs, current_session_id=session_name)
+        
+        if session_profile is None or not isinstance(session_profile, np.ndarray):
+            return jsonify({"papers": [], "message": "Failed to build session profile"})
+
+        print(f"   Built profile from {len(profile_inputs)} interactions")
+
+        # 6. Search for similar papers using profile
+        results = qdrant_search_parallel(
+            query_embedding=session_profile.reshape(1, -1),
+            clients=qdrant_clients,
+            k=k + len(seen_qdrant_ids),  # Fetch extra to account for filtering
+            topic=""
+        )
+
+        # 7. Filter out already-seen papers
+        filtered_results = [r for r in results if r.get("qdrant_id") not in seen_qdrant_ids][:k]
+
+        print(f"   Returning {len(filtered_results)} recommendations (filtered from {len(results)})")
+
+        return jsonify({
+            "papers": filtered_results,
+            "session_interaction_count": len(events),
+            "message": f"Based on {len(events)} papers you've explored in this session"
+        })
+
+    except Exception as e:
+        print(f"❌ For You error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/search", methods=["POST"])
 def search():
+    # ... search logic ...
     print("🔍 /search endpoint hit!")  # <-- Add this
 
     first_time=time.time()
@@ -318,9 +429,12 @@ def papers_from_events(events):
 
     return papers
 
+
+
 @app.route("/get_papers_by_reaction", methods=["GET"])
 def get_papers_by_reaction():
     print(f"✅ CORS configured for: {FRONTEND_URL}") 
+    reaction_type = "like"
     try:
         user_id, error_response = extract_user_id_from_token()
         if error_response:

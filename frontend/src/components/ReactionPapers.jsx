@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext";
 import DisplayResults from "./DisplayResults";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 export default function ReactionPapers({
@@ -115,7 +115,7 @@ export default function ReactionPapers({
   return (
     <div className="p-8 flex flex-col items-center z-10">
       <h2 className="text-4xl font-black text-center mb-8 text-slate-900 tracking-tight">
-        {reactionType === "like" ? "Research Library" : "Archive"}
+        {reactionType === "like" ? "Research Library" : "Disliked"}
       </h2>
 
       {token && papers.length > 0 && (
@@ -124,7 +124,7 @@ export default function ReactionPapers({
             <div className="relative flex-grow">
               <input
                 type="text"
-                placeholder={`Search ${reactionType === "like" ? "library" : "archive"}...`}
+                placeholder={`Search ${reactionType === "like" ? "library" : "disliked papers"}...`}
                 className="w-full px-5 py-3 rounded-xl border border-slate-200 text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -192,7 +192,7 @@ export default function ReactionPapers({
       ) : filteredPapers.length === 0 ? (
         <div className="bg-white border border-slate-200 text-slate-600 px-10 py-12 rounded-3xl text-center shadow-2xl max-w-xl mx-auto mt-12">
           <p className="text-2xl font-black text-slate-900 mb-3">
-            Your {reactionType === "like" ? "library" : "archive"} is empty.
+            Your {reactionType === "like" ? "library" : "disliked collection"} is empty.
           </p>
           <p className="text-base text-slate-500 mb-10 leading-relaxed">
             Discovery starts with a single bookmark. Explore the feed and curate the research that matters to you.
