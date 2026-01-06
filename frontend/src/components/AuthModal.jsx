@@ -162,6 +162,7 @@ export default function AuthModal({ onClose }) {
                   </button>
                 </form>
 
+                {/* 
                 <div className="relative py-4">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
                   <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest leading-none bg-white px-4 text-slate-400">or continue with</div>
@@ -183,6 +184,7 @@ export default function AuthModal({ onClose }) {
                     GitHub
                   </button>
                 </div>
+                */}
               </motion.div>
             )}
 
@@ -330,7 +332,8 @@ export default function AuthModal({ onClose }) {
         {/* Footer */}
         {view !== "success" && (
           <div className="bg-slate-50 px-8 py-6 border-t border-slate-100 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            <span>By proceeding, you agree to our Terms</span>
+            {/* <span>By proceeding, you agree to our Terms</span> */}
+            <div /> {/* Spacer to keep Cancel on the right */}
             <button onClick={onClose} className="hover:text-slate-600">Cancel</button>
           </div>
         )}
